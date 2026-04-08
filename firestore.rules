@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.timeLimitMinutes is int
+        && request.resource.data.timeLimitMinutes > 0
+        && request.resource.data.timeLimitMinutes <= 24 * 60;
+      allow update, delete: if request.auth != null
+        && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /attempts/{attemptId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.challengeId is string;
+      allow update: if request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.challengeId == resource.data.challengeId
+        && request.resource.data.startedAt == resource.data.startedAt
+        && request.resource.data.deadlineAt == resource.data.deadlineAt
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['foundSpotIndices', 'status', 'completedAt']);
+    }
+
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
