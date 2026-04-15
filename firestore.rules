@@ -9,14 +9,20 @@ service cloud.firestore {
         && request.resource.data.title.size() > 0
         && request.resource.data.timeLimitMinutes is int
         && request.resource.data.timeLimitMinutes > 0
-        && request.resource.data.timeLimitMinutes <= 24 * 60;
+        && request.resource.data.timeLimitMinutes <= 24 * 60
+        && (!('huntHint' in request.resource.data)
+          || (request.resource.data.huntHint is string
+            && request.resource.data.huntHint.size() <= 800));
       allow update, delete: if request.auth != null
         && resource.data.createdBy == request.auth.uid;
     }
 
+    /**
+     * Attempt reads are open so the in-app admin dashboard (#/admin) can list activity.
+     * Production: restrict to Cloud Functions or custom claims instead of public reads.
+     */
     match /attempts/{attemptId} {
-      allow read: if request.auth != null
-        && resource.data.userId == request.auth.uid;
+      allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.challengeId is string;
@@ -33,6 +39,94 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    /** One doc per normalized username; uid owner. Used for unique display names. */
+    match /userHandles/{handleId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && handleId is string
+        && handleId.size() >= 2
+        && handleId.size() <= 32;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    /** In-run player photos for a challenge (visible to signed-in users). */
+    match /runPhotos/{photoId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.challengeId is string
+        && request.resource.data.attemptId is string
+        && request.resource.data.spotIndex is int
+        && request.resource.data.spotIndex >= 0
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.matches('https://.*')
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'attemptId', 'userId', 'spotIndex', 'imageUrl', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'attemptId', 'userId', 'spotIndex', 'imageUrl', 'createdAt', 'authorName'
+        ])
+        && (!('authorName' in request.resource.data)
+          || (request.resource.data.authorName is string
+            && request.resource.data.authorName.size() <= 48))
+        && exists(/databases/$(database)/documents/challenges/$(request.resource.data.challengeId))
+        && get(/databases/$(database)/documents/challenges/$(request.resource.data.challengeId)).data.spots is list
+        && request.resource.data.spotIndex
+          < get(/databases/$(database)/documents/challenges/$(request.resource.data.challengeId)).data.spots.size()
+        && exists(/databases/$(database)/documents/attempts/$(request.resource.data.attemptId))
+        && get(/databases/$(database)/documents/attempts/$(request.resource.data.attemptId)).data.userId
+          == request.auth.uid
+        && get(/databases/$(database)/documents/attempts/$(request.resource.data.attemptId)).data.challengeId
+          == request.resource.data.challengeId
+        && get(/databases/$(database)/documents/attempts/$(request.resource.data.attemptId)).data.status
+          == 'active';
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if false;
+
+      match /votes/{voteUid} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && voteUid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['vote', 'mood'])
+          && request.resource.data.vote in ['up', 'down', '']
+          && request.resource.data.mood in ['laugh', 'cry', 'awkward', ''];
+        allow delete: if request.auth != null && voteUid == request.auth.uid;
+      }
+
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.keys().hasAll(['userId', 'text', 'createdAt'])
+          && request.resource.data.keys().hasOnly([
+            'userId', 'text', 'createdAt', 'parentCommentId', 'authorName'
+          ])
+          && (!('parentCommentId' in request.resource.data)
+            || request.resource.data.parentCommentId is string)
+          && (!('authorName' in request.resource.data)
+            || (request.resource.data.authorName is string
+              && request.resource.data.authorName.size() <= 48));
+        allow update, delete: if request.auth != null
+          && resource.data.userId == request.auth.uid;
+
+        match /votes/{voteUid} {
+          allow read: if request.auth != null;
+          allow create, update: if request.auth != null
+            && voteUid == request.auth.uid
+            && request.resource.data.keys().hasOnly(['vote', 'mood'])
+            && request.resource.data.vote in ['up', 'down', '']
+            && request.resource.data.mood in ['laugh', 'cry', 'awkward', ''];
+          allow delete: if request.auth != null && voteUid == request.auth.uid;
+        }
+      }
     }
   }
 }

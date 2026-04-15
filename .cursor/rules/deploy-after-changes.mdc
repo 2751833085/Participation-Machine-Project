@@ -1,0 +1,18 @@
+---
+description: After editing deployable project files, run Firebase deploy from repo root.
+alwaysApply: true
+---
+
+# Deploy after changes
+
+When you finish edits that affect the live app or backend config, run deployment from the project root **in the same turn** (unless the user explicitly says not to deploy):
+
+```bash
+firebase deploy
+```
+
+Applies when touching any of: `public/**`, `firebase.json`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`, `.firebaserc`.
+
+Do **not** deploy for documentation-only or `.md`-only changes unless the user asks.
+
+If `firebase` fails (not installed, not logged in), report the error and what the user should run locally.

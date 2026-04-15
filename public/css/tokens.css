@@ -1,0 +1,97 @@
+/* ══ Design tokens: Scottish cabin / boutique hotel mood, mobile portrait ══ */
+
+:root {
+  --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --font-ui: "DM Sans", system-ui, -apple-system, sans-serif;
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --tap: 48px;
+  --shadow-sm: 0 1px 3px rgba(42, 37, 32, 0.06);
+  --shadow-md: 0 10px 28px rgba(42, 37, 32, 0.08);
+  --shadow-lg: 0 22px 56px rgba(42, 37, 32, 0.12);
+  --header-h: 3.5rem;
+  --content-max: 100%;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Slight inset for page titles / hero kicker so type aligns cohesively */
+  --title-text-inset: 0.45rem;
+  /* Fallback before data-theme is set (inline script runs early) */
+  --gate-bg: #1a1612;
+  --gate-surface: #2c2620;
+  --gate-text: #f7f2ea;
+  --gate-text-muted: color-mix(in srgb, #f7f2ea 88%, transparent);
+  --gate-border: #b8956a;
+  --gate-icon: color-mix(in srgb, #c4a574 88%, #fff 12%);
+  --gate-shadow-outer: 0 24px 64px color-mix(in srgb, #000 45%, transparent);
+  --gate-shadow-inner: 0 0 0 1px color-mix(in srgb, #fff 6%, transparent) inset;
+  --gate-radial: color-mix(in srgb, #b8956a 14%, transparent);
+  --gate-icon-drop: drop-shadow(0 3px 14px color-mix(in srgb, #000 55%, transparent));
+}
+
+html[data-theme="light"] {
+  /* Wide-screen / landscape portrait gate — matches light app chrome */
+  --gate-bg: #e8dfd2;
+  --gate-surface: #fdf9f3;
+  --gate-text: #221e1a;
+  --gate-text-muted: #5e564c;
+  --gate-border: #a68b6a;
+  --gate-icon: #7a5c45;
+  --gate-shadow-outer: 0 22px 56px rgba(42, 37, 32, 0.14);
+  --gate-shadow-inner: 0 0 0 1px rgba(255, 255, 255, 0.85) inset;
+  --gate-radial: color-mix(in srgb, var(--gate-border) 18%, transparent);
+  --gate-icon-drop: drop-shadow(0 2px 12px rgba(42, 37, 32, 0.12));
+  --bg: #f3ece2;
+  --bg-warm: #e8dfd2;
+  --surface: #fdf9f3;
+  --surface-2: #efe8dc;
+  --text: #221e1a;
+  --text-muted: #5e564c;
+  --border: #dcd3c4;
+  --border-strong: #c9bfb0;
+  --accent: #5c4a38;
+  --accent-hover: #453624;
+  --accent-soft: rgba(92, 74, 56, 0.14);
+  --brown: #7a5c45;
+  --brown-soft: rgba(122, 92, 69, 0.12);
+  --ok: #4a6b4f;
+  --ok-soft: rgba(74, 107, 79, 0.15);
+  --danger: #a84848;
+  --danger-soft: rgba(168, 72, 72, 0.12);
+  --footer-bg: #2a241c;
+  --footer-text: #f0ebe3;
+  --footer-muted: #a3988a;
+}
+
+html[data-theme="dark"] {
+  /* Portrait gate — warm dark panel */
+  --gate-bg: #1a1612;
+  --gate-surface: #2c2620;
+  --gate-text: #f7f2ea;
+  --gate-text-muted: color-mix(in srgb, #f7f2ea 88%, transparent);
+  --gate-border: #b8956a;
+  --gate-icon: color-mix(in srgb, #c4a574 88%, #fff 12%);
+  --gate-shadow-outer: 0 24px 64px color-mix(in srgb, #000 45%, transparent);
+  --gate-shadow-inner: 0 0 0 1px color-mix(in srgb, #fff 6%, transparent) inset;
+  --gate-radial: color-mix(in srgb, var(--gate-border) 14%, transparent);
+  --gate-icon-drop: drop-shadow(0 3px 14px color-mix(in srgb, #000 55%, transparent));
+  --bg: #141210;
+  --bg-warm: #1c1915;
+  --surface: #221e19;
+  --surface-2: #2e2923;
+  --text: #f5f0e8;
+  --text-muted: #9a9288;
+  --border: #3d3730;
+  --border-strong: #524a41;
+  --accent: #c4a574;
+  --accent-hover: #d4b88a;
+  --accent-soft: rgba(196, 165, 116, 0.18);
+  --brown: #b09a86;
+  --brown-soft: rgba(176, 154, 134, 0.14);
+  --ok: #7aab84;
+  --ok-soft: rgba(122, 171, 132, 0.18);
+  --danger: #e07a7a;
+  --danger-soft: rgba(224, 122, 122, 0.14);
+  --footer-bg: #0f0d0b;
+  --footer-text: #ebe6de;
+  --footer-muted: #8a8278;
+}

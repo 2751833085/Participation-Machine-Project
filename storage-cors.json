@@ -1,0 +1,26 @@
+[
+  {
+    "origin": [
+      "http://localhost:5003",
+      "http://127.0.0.1:5003",
+      "http://localhost:5000",
+      "http://127.0.0.1:5000",
+      "http://localhost:5002",
+      "http://127.0.0.1:5002",
+      "http://localhost:8080",
+      "http://127.0.0.1:8080",
+      "https://tourgo-a8ca9.web.app",
+      "https://tourgo-a8ca9.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "Content-Encoding",
+      "Range",
+      "x-goog-resumable"
+    ]
+  }
+]

@@ -1,10 +1,23 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    /**
+     * Challenge images: one segment per file (e.g. challenges/{id}/0.jpg).
+     * Using a single-path segment avoids buggy matches on recursive wildcards (403 on upload).
+     */
     match /challenges/{challengeId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null
-        && fileName.matches('.*\\.(jpg|jpeg|png|webp)$');
+        && fileName.matches('.*[.](jpg|jpeg|png|webp)$')
+        && request.resource.size < 15 * 1024 * 1024;
+    }
+
+    /** In-run checkpoint photos (see run-social.js: run-uploads/{id}.jpg). */
+    match /challenges/{challengeId}/run-uploads/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && fileName.matches('.*[.](jpg|jpeg|png|webp)$')
+        && request.resource.size < 15 * 1024 * 1024;
     }
   }
 }

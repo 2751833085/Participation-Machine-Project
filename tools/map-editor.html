@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test2 — Manhattan Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--font-ui:"Inter",system-ui,sans-serif;--radius-sm:8px;--radius:14px;--radius-lg:20px;--ease:cubic-bezier(.25,.1,.25,1)}
+html[data-theme="light"]{--bg:#f5f4f0;--surface:#fffcf7;--surface-2:#f0ebe3;--text:#1b1b1b;--text-muted:#5c5852;--border:#e2dcd2;--accent:#5f6f52;--accent-hover:#4d5a42;--accent-soft:rgba(95,111,82,.14)}
+html[data-theme="dark"]{--bg:#141413;--surface:#1f1e1c;--surface-2:#2a2825;--text:#f2efe8;--text-muted:#a39e94;--border:#3d3a36;--accent:#8a9a7c;--accent-hover:#9bab8d;--accent-soft:rgba(138,154,124,.18)}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100dvh;display:flex;flex-direction:column;font-family:var(--font-ui);background:var(--bg);color:var(--text)}
+
+.map-viewport{flex:1;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:1rem .5rem 7rem;-webkit-overflow-scrolling:touch}
+.map-viewport svg{width:100%;max-width:340px;height:auto;display:block}
+@media(min-width:600px){.map-viewport svg{max-width:400px}}
+
+.hood{cursor:pointer;stroke:rgba(255,255,255,.35);stroke-width:1;transition:opacity .15s,filter .15s,stroke-width .15s}
+.hood:hover{opacity:.85;filter:brightness(1.08)}
+.hood.is-selected{stroke:#fffcf7;stroke-width:2.5;filter:brightness(1.1) saturate(1.12)}
+
+.lbl{font-family:var(--font-ui);font-weight:700;fill:#fffcf7;pointer-events:none;text-anchor:middle;dominant-baseline:central;letter-spacing:.08em;text-transform:uppercase;paint-order:stroke;stroke:rgba(0,0,0,.18);stroke-width:.6px}
+.lbl-dark{fill:#2a2826;stroke:rgba(255,255,255,.25)}
+
+.info-panel{position:fixed;left:0;right:0;bottom:0;z-index:55;transform:translateY(100%);transition:transform .28s var(--ease);pointer-events:none}
+.info-panel.is-open{transform:translateY(0);pointer-events:auto}
+.info-panel-inner{max-width:440px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1rem 1.1rem calc(5.8rem + env(safe-area-inset-bottom));box-shadow:0 -8px 32px rgba(0,0,0,.10)}
+.info-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+.info-panel-header h2{font-family:var(--font-ui);font-size:1.1rem;margin:0;font-weight:700}
+.info-panel-close{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);font-size:1rem}
+.info-panel-close:hover{background:var(--surface-2)}
+.hunt-count{font-size:.75rem;color:var(--text-muted);margin:0 0 .65rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.hunt-list{display:grid;gap:.45rem}
+.hunt-item{display:flex;align-items:center;gap:.6rem;padding:.55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;transition:border-color .18s,background .18s}
+.hunt-item:hover{border-color:var(--accent);background:var(--accent-soft)}
+.hunt-item-thumb{width:44px;height:44px;border-radius:6px;flex-shrink:0;background:linear-gradient(135deg,var(--surface),var(--border))}
+.hunt-item-body{min-width:0}
+.hunt-item-body strong{font-size:.85rem;display:block;margin-bottom:.12rem}
+.hunt-item-body span{font-size:.7rem;color:var(--text-muted);font-weight:500}
+.empty-hunts{font-size:.85rem;color:var(--text-muted);text-align:center;padding:1.2rem 0;font-style:italic}
+
+.app-dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:center;padding:.5rem .75rem calc(.5rem + env(safe-area-inset-bottom));pointer-events:none}
+.app-dock-inner{pointer-events:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;width:100%;max-width:22rem;padding:.45rem .55rem;overflow:hidden;background:color-mix(in srgb,var(--surface) 94%,transparent);border:1px solid var(--border);border-radius:var(--radius-lg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.12)}
+@media(max-width:599px){.app-dock-inner{max-width:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0}}
+.dock-tab{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.18rem;padding:.35rem .2rem;border:1px solid transparent;border-radius:var(--radius-sm);text-decoration:none;color:var(--text-muted);font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dock-tab.is-active{color:var(--accent);background:var(--surface-2);border-color:var(--border)}
+.dock-tab svg{width:22px;height:22px}
+.dock-fab{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fffcf5;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 16px color-mix(in srgb,var(--accent) 38%,transparent)}
+.dock-fab svg{width:24px;height:24px}
+.theme-btn{position:fixed;top:.65rem;right:.65rem;z-index:70;width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.theme-btn:hover{background:var(--surface-2)}
+.theme-btn svg{width:18px;height:18px}
+html[data-theme="light"] .icon-moon{display:none}
+html[data-theme="dark"] .icon-sun{display:none}
+.toast-wrap{position:fixed;top:.75rem;left:50%;transform:translateX(-50%);z-index:110;pointer-events:none}
+.toast{background:var(--text);color:var(--surface);padding:.5rem .9rem;border-radius:var(--radius-sm);font-size:.82rem;font-weight:500;opacity:0;transition:opacity .25s;white-space:nowrap}
+.toast.is-on{opacity:1}
+
+/* ===== Edit-mode tools ===== */
+.edit-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;gap:.4rem;padding:.35rem .55rem;background:rgba(30,30,28,.92);backdrop-filter:blur(8px);color:#e8e5de;font-family:var(--font-ui);font-size:.7rem;border-bottom:1px solid rgba(255,255,255,.12)}
+.edit-bar button{font-family:inherit;font-size:.7rem;padding:.2rem .48rem;border:1px solid rgba(255,255,255,.22);border-radius:6px;background:rgba(255,255,255,.08);color:#e8e5de;cursor:pointer;white-space:nowrap}
+.edit-bar button:hover{background:rgba(255,255,255,.16)}
+.edit-bar button.is-on{background:rgba(95,111,82,.5);border-color:rgba(95,111,82,.8)}
+.edit-bar .coord-display{margin-left:auto;font-family:"SF Mono",Menlo,monospace;font-size:.68rem;color:#a8e6a1;min-width:7em;text-align:right}
+.sel-bar{position:fixed;bottom:5.5rem;left:.5rem;right:.5rem;z-index:190;display:none;font-family:"SF Mono",Menlo,monospace;font-size:.62rem;color:#f0d080;background:rgba(30,30,28,.88);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.35rem .5rem;word-break:break-all;user-select:all;-webkit-user-select:all;max-height:3.5rem;overflow:auto}
+.sel-bar.is-on{display:block}
+body.edit-mode .map-viewport{padding-top:2.4rem}
+.ref-wrap{position:fixed;z-index:95;display:none;cursor:move;touch-action:none}
+.ref-wrap.is-on{display:block}
+.ref-wrap img{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-drag:none}
+.ref-wrap .ref-handle{position:absolute;bottom:-6px;right:-6px;width:16px;height:16px;background:#4af;border:2px solid #fff;border-radius:3px;cursor:nwse-resize;z-index:2}
+.ref-wrap .ref-opacity{position:absolute;top:-4px;right:-4px;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.5);border:1.5px solid #fff;cursor:pointer;font-size:7px;line-height:11px;text-align:center;z-index:2;color:#333}
+.map-viewport{position:relative;overflow:hidden}
+.svg-grid line{stroke:rgba(255,0,0,.12);stroke-width:.5}
+.svg-grid text{fill:rgba(255,0,0,.3);font-size:5px;font-family:"SF Mono",Menlo,monospace}
+.svg-grid .grid-major{stroke:rgba(255,0,0,.25);stroke-width:.8}
+.edit-vertex{fill:#ff4444;stroke:#fff;stroke-width:1;cursor:move;pointer-events:all;filter:drop-shadow(0 0 2px rgba(0,0,0,.5))}
+.edit-vertex:hover{fill:#ff6666}
+.edit-vertex.is-active{fill:#ffff44;stroke:#ff4444}
+.edit-midpt{fill:rgba(68,160,255,.6);stroke:#fff;stroke-width:.7;cursor:copy;pointer-events:all}
+.edit-midpt:hover{fill:rgba(68,160,255,.9)}
+.hood.edit-passthrough{pointer-events:none!important}
+.hood.edit-moving{cursor:grab}
+.hood.edit-moving:active{cursor:grabbing}
+.edit-bar .sep{width:1px;height:18px;background:rgba(255,255,255,.18);flex-shrink:0}
+.edit-bar .btn-danger{border-color:rgba(255,80,80,.4);color:#ffa0a0}
+.edit-bar .btn-danger:hover{background:rgba(255,80,80,.2)}
+.edit-bar .btn-save{border-color:rgba(100,200,100,.5);color:#a0ffa0}
+.edit-bar .btn-save:hover{background:rgba(100,200,100,.2)}
+</style>
+</head>
+<body>
+<!-- Edit toolbar -->
+<div class="edit-bar" id="edit-bar">
+  <button id="btn-grid" title="Toggle grid">Grid</button>
+  <button id="btn-ref" title="Toggle reference image">Ref</button>
+  <span class="sep"></span>
+  <button id="btn-vertices" title="Edit vertices (V)">V</button>
+  <button id="btn-move" title="Move polygon (M)">Move</button>
+  <button id="btn-addpt" title="Add vertex (+)">+Pt</button>
+  <button id="btn-delpt" class="btn-danger" title="Delete vertex (Del)">-Pt</button>
+  <span class="sep"></span>
+  <button id="btn-save" class="btn-save" title="Save (⌘S)">💾</button>
+  <button id="btn-export" title="Export points">Export</button>
+  <span class="coord-display" id="coord-display">—</span>
+</div>
+
+<!-- Floating selection info bar (bottom, above dock) -->
+<div class="sel-bar" id="sel-info"></div>
+
+<!-- Reference image wrapper (fixed, free drag/resize) -->
+<div class="ref-wrap" id="ref-wrap">
+  <img id="ref-overlay" alt="reference" draggable="false">
+  <div class="ref-handle" id="ref-handle" title="Drag to resize"></div>
+  <div class="ref-opacity" id="ref-opacity" title="Click to cycle opacity">◐</div>
+</div>
+
+<div class="toast-wrap" aria-live="polite"><div id="toast" class="toast" role="status"></div></div>
+<button type="button" class="theme-btn" id="btn-theme" aria-label="Toggle theme">
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+</button>
+
+<div class="map-viewport">
+<svg id="map-svg" viewBox="0 0 400 860" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Interactive Manhattan neighborhood map">
+
+<!-- Grid (hidden by default) -->
+<g id="svg-grid" class="svg-grid" style="display:none"></g>
+
+<!-- ===== Neighborhoods (back to front) ===== -->
+<g id="neighborhoods">
+
+<!-- Upper West Side (big, rendered first so small blocks overlay) -->
+<polygon class="hood" data-hood="upper-west-side" fill="#a8b89c"
+  points="86,210 195,210 195,415 36,415 42,395 48,370 55,340 64,300 72,265"/>
+
+<!-- 1 Washington Heights -->
+<polygon class="hood" data-hood="washington-heights" fill="#5f6f52"
+  points="168,12 308,12 316,50 155,50"/>
+
+<!-- 2 Hamilton Heights -->
+<polygon class="hood" data-hood="hamilton-heights" fill="#88a4a0"
+  points="155,50 210,50 210,82 142,82"/>
+
+<!-- 3 Morningside Heights -->
+<polygon class="hood" data-hood="morningside-heights" fill="#d4c090"
+  points="142,82 162,82 162,210 86,210"/>
+
+<!-- 4 Harlem (L-shape) -->
+<polygon class="hood" data-hood="harlem" fill="#c4866e"
+  points="210,50 248,50 248,210 162,210 162,82 210,82"/>
+
+<!-- 5 East Harlem -->
+<polygon class="hood" data-hood="east-harlem" fill="#b8a0a8"
+  points="248,50 316,50 336,145 248,145"/>
+
+<!-- 6 Spanish Harlem -->
+<polygon class="hood" data-hood="spanish-harlem" fill="#98b4b0"
+  points="248,145 336,145 348,210 248,210"/>
+
+<!-- 8 Central Park -->
+<polygon class="hood" data-hood="central-park" fill="#7a8c6e"
+  points="195,210 280,210 280,415 195,415"/>
+
+<!-- 9 Yorkville -->
+<polygon class="hood" data-hood="yorkville" fill="#d49888"
+  points="280,210 348,210 352,280 280,280"/>
+
+<!-- 10 Upper East Side -->
+<polygon class="hood" data-hood="upper-east-side" fill="#d0c4aa"
+  points="280,280 352,280 362,415 280,415"/>
+
+<!-- 11 Lincoln Center (small, overlays UWS) -->
+<polygon class="hood" data-hood="lincoln-center" fill="#d49888"
+  points="50,358 78,358 78,382 46,382"/>
+
+<!-- 12 Columbus Circle (small) -->
+<polygon class="hood" data-hood="columbus-circle" fill="#c4866e"
+  points="46,382 78,382 78,405 40,405"/>
+
+<!-- 13 Theater District -->
+<polygon class="hood" data-hood="theater-district" fill="#88a4a0"
+  points="40,405 78,405 78,440 32,440"/>
+
+<!-- 14 Hell's Kitchen (tall narrow) -->
+<polygon class="hood" data-hood="hells-kitchen" fill="#d4c090"
+  points="32,440 78,440 78,560 22,560"/>
+
+<!-- 15 Midtown (large) -->
+<polygon class="hood" data-hood="midtown" fill="#c8b478"
+  points="78,415 362,415 367,495 78,495"/>
+
+<!-- 16 Garment District -->
+<polygon class="hood" data-hood="garment-district" fill="#b8a0a8"
+  points="78,495 215,495 215,560 78,560"/>
+
+<!-- 17 Murray Hill -->
+<polygon class="hood" data-hood="murray-hill" fill="#a8b89c"
+  points="215,495 310,495 310,560 215,560"/>
+
+<!-- 18 Kips Bay -->
+<polygon class="hood" data-hood="kips-bay" fill="#88a4a0"
+  points="310,495 367,495 367,560 310,560"/>
+
+<!-- 19 Chelsea (wide) -->
+<polygon class="hood" data-hood="chelsea" fill="#98b4b0"
+  points="22,560 295,560 295,608 32,608"/>
+
+<!-- 20 Gramercy -->
+<polygon class="hood" data-hood="gramercy" fill="#d4c090"
+  points="295,560 367,560 362,608 295,608"/>
+
+<!-- 21 West Village -->
+<polygon class="hood" data-hood="west-village" fill="#5f6f52"
+  points="32,608 145,608 145,660 48,660"/>
+
+<!-- 22 Greenwich Village -->
+<polygon class="hood" data-hood="greenwich-village" fill="#d0c4aa"
+  points="145,608 248,608 248,660 145,660"/>
+
+<!-- 23 East Village -->
+<polygon class="hood" data-hood="east-village" fill="#d49888"
+  points="248,608 362,608 350,660 248,660"/>
+
+<!-- 24 SoHo -->
+<polygon class="hood" data-hood="soho" fill="#b8a0a8"
+  points="48,660 195,660 195,718 70,718"/>
+
+<!-- 25 Chinatown (narrow strip) -->
+<polygon class="hood" data-hood="chinatown" fill="#88a4a0"
+  points="195,660 225,660 225,760 195,760"/>
+
+<!-- 26 Lower East Side (large) -->
+<polygon class="hood" data-hood="lower-east-side" fill="#c4866e"
+  points="225,660 350,660 312,760 225,760"/>
+
+<!-- 27 Tribeca -->
+<polygon class="hood" data-hood="tribeca" fill="#c8b478"
+  points="70,718 195,718 195,760 100,760"/>
+
+<!-- 28 Financial District (bottom, full width) -->
+<polygon class="hood" data-hood="financial-district" fill="#5f6f52"
+  points="100,760 312,760 270,800 215,832 190,848 165,830 130,795"/>
+
+<!-- 29 City Hall (overlay on FD upper-right) -->
+<polygon class="hood" data-hood="city-hall" fill="#d4c090"
+  points="250,760 312,760 278,798 250,798"/>
+
+</g>
+
+<!-- ===== Labels (matching reference positions & rotations) ===== -->
+<g id="labels">
+  <!-- Washington Heights -->
+  <text class="lbl" font-size="6.5" transform="translate(232,31) rotate(-12)"><tspan x="0" dy="-5">WASHINGTON</tspan><tspan x="0" dy="10">HEIGHTS</tspan></text>
+
+  <!-- Hamilton Heights -->
+  <text class="lbl" font-size="5" transform="translate(178,63) rotate(-8)"><tspan x="0" dy="-4">HAMILTON</tspan><tspan x="0" dy="8">HEIGHTS</tspan></text>
+
+  <!-- Morningside Heights -->
+  <text class="lbl" font-size="5" transform="translate(122,150) rotate(-90)"><tspan x="0" dy="-4">MORNINGSIDE</tspan><tspan x="0" dy="9">HEIGHTS</tspan></text>
+
+  <!-- Harlem -->
+  <text class="lbl" font-size="14" transform="translate(208,148) rotate(-75)">HARLEM</text>
+
+  <!-- East Harlem -->
+  <text class="lbl" font-size="7" x="290" y="90"><tspan x="290" dy="0">EAST</tspan><tspan x="290" dy="11">HARLEM</tspan></text>
+
+  <!-- Spanish Harlem -->
+  <text class="lbl" font-size="7" x="290" y="170"><tspan x="290" dy="0">SPANISH</tspan><tspan x="290" dy="11">HARLEM</tspan></text>
+
+  <!-- Upper West Side -->
+  <text class="lbl" font-size="12" x="130" y="295"><tspan x="130" dy="0">UPPER</tspan><tspan x="130" dy="16">WEST</tspan><tspan x="130" dy="16">SIDE</tspan></text>
+
+  <!-- Central Park -->
+  <text class="lbl" font-size="13" transform="translate(238,318) rotate(-90)"><tspan x="0" dy="-8">CENTRAL</tspan><tspan x="0" dy="16">PARK</tspan></text>
+
+  <!-- Yorkville -->
+  <text class="lbl lbl-dark" font-size="6" x="314" y="248">YORKVILLE</text>
+
+  <!-- Upper East Side -->
+  <text class="lbl lbl-dark" font-size="9" x="318" y="340"><tspan x="318" dy="0">UPPER</tspan><tspan x="318" dy="13">EAST SIDE</tspan></text>
+
+  <!-- Lincoln Center -->
+  <text class="lbl lbl-dark" font-size="4.5" x="64" y="366"><tspan x="64" dy="0">LINCOLN</tspan><tspan x="64" dy="7">CENTER</tspan></text>
+
+  <!-- Columbus Circle -->
+  <text class="lbl" font-size="4.5" x="60" y="390"><tspan x="60" dy="0">COLUMBUS</tspan><tspan x="60" dy="7">CIRCLE</tspan></text>
+
+  <!-- Theater District -->
+  <text class="lbl" font-size="5" x="56" y="416"><tspan x="56" dy="0">THEATER</tspan><tspan x="56" dy="8">DISTRICT</tspan></text>
+
+  <!-- Hell's Kitchen -->
+  <text class="lbl" font-size="6.5" transform="translate(50,505) rotate(-90)"><tspan x="0" dy="-5">HELL'S</tspan><tspan x="0" dy="11">KITCHEN</tspan></text>
+
+  <!-- Midtown -->
+  <text class="lbl" font-size="16" x="218" y="460">MIDTOWN</text>
+
+  <!-- Garment District -->
+  <text class="lbl" font-size="6.5" x="146" y="520"><tspan x="146" dy="0">GARMENT</tspan><tspan x="146" dy="10">DISTRICT</tspan></text>
+
+  <!-- Murray Hill -->
+  <text class="lbl lbl-dark" font-size="7" x="262" y="520"><tspan x="262" dy="0">MURRAY</tspan><tspan x="262" dy="11">HILL</tspan></text>
+
+  <!-- Kips Bay -->
+  <text class="lbl" font-size="5" x="338" y="520"><tspan x="338" dy="0">KIPS</tspan><tspan x="338" dy="8">BAY</tspan></text>
+
+  <!-- Chelsea -->
+  <text class="lbl" font-size="14" x="152" y="588">CHELSEA</text>
+
+  <!-- Gramercy -->
+  <text class="lbl lbl-dark" font-size="6.5" x="330" y="580">GRAMERCY</text>
+
+  <!-- West Village -->
+  <text class="lbl" font-size="6.5" x="88" y="628"><tspan x="88" dy="0">WEST</tspan><tspan x="88" dy="10">VILLAGE</tspan></text>
+
+  <!-- Greenwich Village -->
+  <text class="lbl lbl-dark" font-size="6.5" x="196" y="628"><tspan x="196" dy="0">GREENWICH</tspan><tspan x="196" dy="10">VILLAGE</tspan></text>
+
+  <!-- East Village -->
+  <text class="lbl lbl-dark" font-size="6.5" x="298" y="628"><tspan x="298" dy="0">EAST</tspan><tspan x="298" dy="10">VILLAGE</tspan></text>
+
+  <!-- SoHo -->
+  <text class="lbl" font-size="13" x="128" y="692">SOHO</text>
+
+  <!-- Chinatown -->
+  <text class="lbl" font-size="5.5" transform="translate(210,712) rotate(-90)">CHINATOWN</text>
+
+  <!-- Lower East Side -->
+  <text class="lbl" font-size="8" x="280" y="695"><tspan x="280" dy="0">LOWER</tspan><tspan x="280" dy="12">EAST</tspan><tspan x="280" dy="12">SIDE</tspan></text>
+
+  <!-- Tribeca -->
+  <text class="lbl" font-size="8" x="140" y="740">TRIBECA</text>
+
+  <!-- Financial District -->
+  <text class="lbl" font-size="6.5" x="185" y="785"><tspan x="185" dy="0">FINANCIAL</tspan><tspan x="185" dy="10">DISTRICT</tspan></text>
+
+  <!-- City Hall -->
+  <text class="lbl lbl-dark" font-size="5" x="275" y="774"><tspan x="275" dy="0">CITY</tspan><tspan x="275" dy="8">HALL</tspan></text>
+</g>
+
+<!-- Vertex dots (LAST = top of z-order) -->
+<g id="svg-vertices" style="display:none"></g>
+
+</svg>
+</div>
+
+<!-- Info panel -->
+<div class="info-panel" id="info-panel">
+  <div class="info-panel-inner">
+    <div class="info-panel-header">
+      <h2 id="panel-title">—</h2>
+      <button type="button" class="info-panel-close" id="panel-close" aria-label="Close">✕</button>
+    </div>
+    <p class="hunt-count" id="panel-count"></p>
+    <div class="hunt-list" id="panel-hunts"></div>
+  </div>
+</div>
+
+<!-- Dock -->
+<nav class="app-dock" aria-label="App navigation">
+  <div class="app-dock-inner">
+    <a class="dock-tab is-active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Hunts
+    </a>
+    <a class="dock-tab" href="#">
+      <span class="dock-fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+      Hunt
+    </a>
+    <a class="dock-tab" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
+      Profile
+    </a>
+  </div>
+</nav>
+
+<script>
+(function(){
+  var TK="test2-theme",SK="test2-map-save";
+  var s=localStorage.getItem(TK);
+  var t=s==="light"||s==="dark"?s:matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";
+  document.documentElement.dataset.theme=t;
+  document.body.classList.add("edit-mode");
+
+  function toast(m){var e=document.getElementById("toast");e.textContent=m;e.classList.add("is-on");clearTimeout(toast._t);toast._t=setTimeout(function(){e.classList.remove("is-on")},2200)}
+
+  document.getElementById("btn-theme").addEventListener("click",function(){
+    var n=document.documentElement.dataset.theme==="dark"?"light":"dark";
+    document.documentElement.dataset.theme=n;localStorage.setItem(TK,n);
+    toast(n==="dark"?"Dark theme":"Light theme");
+  });
+
+  var svg=document.getElementById("map-svg");
+  var gridG=document.getElementById("svg-grid");
+  var vertG=document.getElementById("svg-vertices");
+  var coordEl=document.getElementById("coord-display");
+  var selInfoEl=document.getElementById("sel-info");
+  var allHoods=Array.from(document.querySelectorAll(".hood"));
+
+  /* ===== Load saved state from localStorage ===== */
+  (function loadSaved(){
+    var raw=localStorage.getItem(SK);
+    if(!raw)return;
+    try{
+      var data=JSON.parse(raw);
+      Object.keys(data).forEach(function(k){
+        var el=document.querySelector('[data-hood="'+k+'"]');
+        if(el)el.setAttribute("points",data[k]);
+      });
+      toast("Loaded saved map");
+    }catch(e){}
+  })();
+
+  /* ===== Grid ===== */
+  function buildGrid(){
+    var html="";
+    for(var x=0;x<=400;x+=50){
+      var cls=x%100===0?" class='grid-major'":"";
+      html+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="860"'+cls+'/>';
+      if(x%100===0)html+='<text x="'+(x+2)+'" y="10">'+x+'</text>';
+    }
+    for(var y=0;y<=860;y+=50){
+      var cls2=y%100===0?" class='grid-major'":"";
+      html+='<line x1="0" y1="'+y+'" x2="400" y2="'+y+'"'+cls2+'/>';
+      if(y%100===0)html+='<text x="2" y="'+(y-2)+'">'+y+'</text>';
+    }
+    gridG.innerHTML=html;
+  }
+  buildGrid();
+  document.getElementById("btn-grid").addEventListener("click",function(){
+    this.classList.toggle("is-on");
+    gridG.style.display=this.classList.contains("is-on")?"":"none";
+  });
+
+  /* ===== Reference image overlay (fixed, free drag/resize) ===== */
+  var refWrap=document.getElementById("ref-wrap");
+  var refImg=document.getElementById("ref-overlay");
+  var refHandle=document.getElementById("ref-handle");
+  var refOpBtn=document.getElementById("ref-opacity");
+  var refState={x:60,y:60,w:280,h:0,op:.35,loaded:false};
+  var opSteps=[.15,.25,.35,.50,.70];
+
+  function applyRefPos(){
+    refWrap.style.left=refState.x+"px";refWrap.style.top=refState.y+"px";
+    refWrap.style.width=refState.w+"px";
+    refImg.style.opacity=refState.op;
+  }
+
+  var refDrag=false,refDragSX,refDragSY,refDragOX,refDragOY;
+  refWrap.addEventListener("mousedown",function(e){
+    if(e.target===refHandle||e.target===refOpBtn)return;
+    refDrag=true;refDragSX=e.clientX;refDragSY=e.clientY;
+    refDragOX=refState.x;refDragOY=refState.y;
+    e.preventDefault();
+  });
+  window.addEventListener("mousemove",function(e){
+    if(!refDrag&&!refResize)return;
+    if(refDrag){
+      refState.x=refDragOX+(e.clientX-refDragSX);
+      refState.y=refDragOY+(e.clientY-refDragSY);
+      applyRefPos();
+    }
+    if(refResize){
+      var nw=refResizeOW+(e.clientX-refResizeSX);
+      if(nw<60)nw=60;
+      refState.w=nw;applyRefPos();
+    }
+  });
+  window.addEventListener("mouseup",function(){refDrag=false;refResize=false});
+
+  var refResize=false,refResizeSX,refResizeOW;
+  refHandle.addEventListener("mousedown",function(e){
+    refResize=true;refResizeSX=e.clientX;refResizeOW=refState.w;
+    e.preventDefault();e.stopPropagation();
+  });
+
+  refOpBtn.addEventListener("click",function(e){
+    var idx=opSteps.indexOf(refState.op);
+    refState.op=opSteps[(idx+1)%opSteps.length];
+    applyRefPos();
+    toast("Opacity: "+Math.round(refState.op*100)+"%");
+    e.stopPropagation();
+  });
+
+  refWrap.addEventListener("wheel",function(e){
+    e.preventDefault();
+    var delta=e.deltaY>0?-20:20;
+    refState.w=Math.max(60,refState.w+delta);
+    applyRefPos();
+  },{passive:false});
+
+  document.getElementById("btn-ref").addEventListener("click",function(){
+    var btn=this;
+    if(refWrap.classList.contains("is-on")){refWrap.classList.remove("is-on");btn.classList.remove("is-on");return}
+    if(!refState.loaded){
+      var input=document.createElement("input");input.type="file";input.accept="image/*";
+      input.onchange=function(e){
+        var f=e.target.files[0];if(!f)return;
+        refImg.src=URL.createObjectURL(f);refState.loaded=true;
+        refWrap.classList.add("is-on");btn.classList.add("is-on");applyRefPos();
+      };
+      input.click();
+    }else{refWrap.classList.add("is-on");btn.classList.add("is-on");applyRefPos()}
+  });
+
+  /* ===== SVG coordinate helper ===== */
+  function svgPoint(e){
+    var pt=svg.createSVGPoint();var ctm=svg.getScreenCTM().inverse();
+    pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(ctm);
+  }
+  svg.addEventListener("mousemove",function(e){var p=svgPoint(e);coordEl.textContent="x:"+Math.round(p.x)+" y:"+Math.round(p.y)});
+  svg.addEventListener("mouseleave",function(){coordEl.textContent="—"});
+
+  /* ===== Undo / Redo ===== */
+  var hist=[],histIdx=-1,MAX_HIST=200;
+  function captureState(){
+    var snap={};allHoods.forEach(function(el){snap[el.getAttribute("data-hood")]=el.getAttribute("points")});return snap;
+  }
+  function pushState(){
+    histIdx++;hist.length=histIdx;hist.push(captureState());
+    if(hist.length>MAX_HIST){hist.shift();histIdx--}
+  }
+  function applyState(snap){
+    Object.keys(snap).forEach(function(k){var el=document.querySelector('[data-hood="'+k+'"]');if(el)el.setAttribute("points",snap[k])});
+    if(editSelected){updateSelInfo();showVertices(editSelected)}
+  }
+  function undo(){if(histIdx<=0)return;histIdx--;applyState(hist[histIdx]);toast("Undo")}
+  function redo(){if(histIdx>=hist.length-1)return;histIdx++;applyState(hist[histIdx]);toast("Redo")}
+  pushState();
+
+  /* ===== Selection ===== */
+  var editSelected=null,activeVertexIdx=-1;
+  var verticesOn=false,moveOn=false,addPtOn=false;
+
+  function updateSelInfo(){
+    if(!editSelected){selInfoEl.textContent="";selInfoEl.classList.remove("is-on");return}
+    selInfoEl.textContent='data-hood="'+editSelected.getAttribute("data-hood")+'" points="'+editSelected.getAttribute("points")+'"';
+    selInfoEl.classList.add("is-on");
+  }
+  function applyPassthrough(){
+    allHoods.forEach(function(h){
+      h.classList.remove("edit-passthrough","edit-moving");
+      if(editSelected&&h!==editSelected&&(verticesOn||moveOn||addPtOn))h.classList.add("edit-passthrough");
+      if(editSelected&&h===editSelected&&moveOn)h.classList.add("edit-moving");
+    });
+  }
+  function selectHood(el){
+    allHoods.forEach(function(h){h.classList.remove("is-selected")});
+    el.classList.add("is-selected");editSelected=el;activeVertexIdx=-1;
+    applyPassthrough();updateSelInfo();showVertices(el);
+  }
+  allHoods.forEach(function(el){
+    el.addEventListener("click",function(e){selectHood(el);e.stopPropagation()});
+  });
+  svg.addEventListener("click",function(e){
+    if(e.target.closest(".edit-vertex")||e.target.closest(".edit-midpt"))return;
+    if(e.target.classList&&e.target.classList.contains("hood"))return;
+    if(!editSelected||(! verticesOn&&!moveOn))return;
+    var pt=svgPoint(e),hit=null;
+    for(var i=allHoods.length-1;i>=0;i--){
+      var h=allHoods[i];if(h===editSelected)continue;
+      h.classList.remove("edit-passthrough");
+      var inside=document.elementFromPoint(e.clientX,e.clientY)===h;
+      h.classList.add("edit-passthrough");
+      if(inside&&!hit)hit=h;
+    }
+    if(hit)selectHood(hit);
+  });
+
+  /* ===== Mode toggles ===== */
+  function setMode(mode){
+    verticesOn=mode==="vertices";moveOn=mode==="move";addPtOn=mode==="addpt";
+    document.getElementById("btn-vertices").classList.toggle("is-on",verticesOn);
+    document.getElementById("btn-move").classList.toggle("is-on",moveOn);
+    document.getElementById("btn-addpt").classList.toggle("is-on",addPtOn);
+    vertG.style.display=(verticesOn||addPtOn)?"":"none";
+    if(!verticesOn&&!addPtOn)vertG.innerHTML="";
+    applyPassthrough();
+    if(editSelected&&(verticesOn||addPtOn))showVertices(editSelected);
+  }
+  document.getElementById("btn-vertices").addEventListener("click",function(){setMode(verticesOn?"off":"vertices")});
+  document.getElementById("btn-move").addEventListener("click",function(){setMode(moveOn?"off":"move")});
+  document.getElementById("btn-addpt").addEventListener("click",function(){setMode(addPtOn?"off":"addpt")});
+
+  /* ===== Vertex rendering ===== */
+  function showVertices(poly){
+    if(!verticesOn&&!addPtOn)return;
+    vertG.innerHTML="";activeVertexIdx=-1;
+    var pts=poly.points;
+    var n=pts.numberOfItems;
+
+    for(var i=0;i<n;i++){
+      (function(idx){
+        var p=pts.getItem(idx);
+        var c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+        c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r","4.5");
+        c.setAttribute("class","edit-vertex");c.setAttribute("data-idx",idx);
+        var dragging=false;
+        c.addEventListener("mousedown",function(e){
+          if(addPtOn)return;
+          dragging=true;activeVertexIdx=idx;
+          vertG.querySelectorAll(".edit-vertex").forEach(function(v){v.classList.remove("is-active")});
+          c.classList.add("is-active");
+          e.preventDefault();e.stopPropagation();
+        });
+        c.addEventListener("click",function(e){
+          activeVertexIdx=idx;
+          vertG.querySelectorAll(".edit-vertex").forEach(function(v){v.classList.remove("is-active")});
+          c.classList.add("is-active");
+          e.stopPropagation();
+        });
+        svg.addEventListener("mousemove",function(e){
+          if(!dragging)return;
+          var sp=svgPoint(e);var nx=Math.round(sp.x),ny=Math.round(sp.y);
+          p.x=nx;p.y=ny;c.setAttribute("cx",nx);c.setAttribute("cy",ny);
+          updateSelInfo();refreshMidpoints(poly);
+        });
+        window.addEventListener("mouseup",function(){if(dragging){dragging=false;pushState();updateSelInfo()}});
+        vertG.appendChild(c);
+      })(i);
+    }
+
+    if(addPtOn)renderMidpoints(poly);
+  }
+
+  function renderMidpoints(poly){
+    vertG.querySelectorAll(".edit-midpt").forEach(function(el){el.remove()});
+    var pts=poly.points;var n=pts.numberOfItems;
+    for(var i=0;i<n;i++){
+      (function(idx){
+        var a=pts.getItem(idx),b=pts.getItem((idx+1)%n);
+        var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+        var c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+        c.setAttribute("cx",mx);c.setAttribute("cy",my);c.setAttribute("r","3.5");
+        c.setAttribute("class","edit-midpt");c.setAttribute("data-edge",idx);
+        c.addEventListener("click",function(e){
+          addVertexAfter(poly,idx,Math.round(mx),Math.round(my));
+          e.stopPropagation();
+        });
+        vertG.appendChild(c);
+      })(i);
+    }
+  }
+  function refreshMidpoints(poly){if(addPtOn)renderMidpoints(poly)}
+
+  /* ===== Add vertex ===== */
+  function addVertexAfter(poly,afterIdx,x,y){
+    var pts=poly.points;
+    var newPt=svg.createSVGPoint();newPt.x=x;newPt.y=y;
+    pts.insertItemBefore(newPt,afterIdx+1);
+    pushState();updateSelInfo();showVertices(poly);
+    toast("Added vertex at "+x+","+y);
+  }
+
+  /* ===== Delete vertex ===== */
+  function deleteActiveVertex(){
+    if(!editSelected||activeVertexIdx<0)return;
+    var pts=editSelected.points;
+    if(pts.numberOfItems<=3){toast("Need at least 3 vertices");return}
+    pts.removeItem(activeVertexIdx);activeVertexIdx=-1;
+    pushState();updateSelInfo();showVertices(editSelected);
+    toast("Vertex deleted");
+  }
+  document.getElementById("btn-delpt").addEventListener("click",deleteActiveVertex);
+
+  /* ===== Move whole polygon ===== */
+  var moveDrag=false,moveSX=0,moveSY=0,moveOrigPts=[];
+  allHoods.forEach(function(el){
+    el.addEventListener("mousedown",function(e){
+      if(!moveOn||el!==editSelected)return;
+      moveDrag=true;var sp=svgPoint(e);moveSX=sp.x;moveSY=sp.y;
+      moveOrigPts=[];
+      var pts=el.points;
+      for(var i=0;i<pts.numberOfItems;i++){var p=pts.getItem(i);moveOrigPts.push({x:p.x,y:p.y})}
+      e.preventDefault();e.stopPropagation();
+    });
+  });
+  svg.addEventListener("mousemove",function(e){
+    if(!moveDrag||!editSelected)return;
+    var sp=svgPoint(e);var dx=Math.round(sp.x-moveSX),dy=Math.round(sp.y-moveSY);
+    var pts=editSelected.points;
+    for(var i=0;i<pts.numberOfItems;i++){
+      var p=pts.getItem(i);p.x=moveOrigPts[i].x+dx;p.y=moveOrigPts[i].y+dy;
+    }
+    updateSelInfo();
+  });
+  window.addEventListener("mouseup",function(){
+    if(moveDrag){moveDrag=false;pushState();updateSelInfo()}
+  });
+
+  /* ===== Save to localStorage ===== */
+  function saveMap(){
+    var data={};allHoods.forEach(function(el){data[el.getAttribute("data-hood")]=el.getAttribute("points")});
+    localStorage.setItem(SK,JSON.stringify(data));
+    toast("Saved to browser ✓");
+  }
+  document.getElementById("btn-save").addEventListener("click",saveMap);
+
+  /* ===== Export all points ===== */
+  document.getElementById("btn-export").addEventListener("click",function(){
+    var all=[];
+    allHoods.forEach(function(el){
+      all.push('data-hood="'+el.getAttribute("data-hood")+'" points="'+el.getAttribute("points")+'"');
+    });
+    navigator.clipboard.writeText(all.join("\n")).then(function(){toast("All points copied!")}).catch(function(){prompt("Copy:",all.join("\n"))});
+  });
+
+  /* ===== Keyboard shortcuts ===== */
+  window.addEventListener("keydown",function(e){
+    var mod=e.metaKey||e.ctrlKey;
+    if(mod&&e.key==="z"&&!e.shiftKey){e.preventDefault();undo()}
+    else if(mod&&e.key==="z"&&e.shiftKey){e.preventDefault();redo()}
+    else if(mod&&e.key==="y"){e.preventDefault();redo()}
+    else if(mod&&e.key==="s"){e.preventDefault();saveMap()}
+    else if(!mod&&e.key==="v"){setMode(verticesOn?"off":"vertices")}
+    else if(!mod&&e.key==="m"){setMode(moveOn?"off":"move")}
+    else if(!mod&&(e.key==="+"||e.key==="=")){setMode(addPtOn?"off":"addpt")}
+    else if(e.key==="Delete"||e.key==="Backspace"){
+      if(document.activeElement&&document.activeElement.tagName==="INPUT")return;
+      e.preventDefault();deleteActiveVertex();
+    }
+  });
+
+  /* ===== Info panel (normal interaction) ===== */
+  var HUNTS={
+    "midtown":[{title:"Times Square dash",spots:5,mins:25},{title:"Rockefeller rush",spots:4,mins:20},{title:"Bryant Park scavenger",spots:3,mins:15}],
+    "soho":[{title:"SoHo gallery crawl",spots:6,mins:30},{title:"Cast-iron photo walk",spots:4,mins:20}],
+    "central-park":[{title:"Great Lawn circuit",spots:8,mins:45},{title:"Bethesda Fountain quest",spots:3,mins:15}],
+    "chelsea":[{title:"High Line hunt",spots:5,mins:25},{title:"Chelsea Market maze",spots:3,mins:15}],
+    "harlem":[{title:"Apollo & 125th stride",spots:4,mins:20}],
+    "greenwich-village":[{title:"Washington Sq. loop",spots:4,mins:20},{title:"Bleecker Street blitz",spots:3,mins:15}],
+    "east-village":[{title:"Alphabet City art walk",spots:5,mins:25}],
+    "tribeca":[{title:"TriBeCa film spots",spots:4,mins:20}],
+    "lower-east-side":[{title:"LES mural hunt",spots:6,mins:30}],
+    "chinatown":[{title:"Chinatown flavor trail",spots:4,mins:20}],
+    "financial-district":[{title:"Wall Street landmarks",spots:5,mins:25}],
+    "upper-west-side":[{title:"Museum Mile west",spots:4,mins:30}],
+    "west-village":[{title:"Stonewall to Hudson pier",spots:3,mins:15}],
+    "upper-east-side":[{title:"Met Museum circuit",spots:4,mins:25}]
+  };
+  var NAMES={
+    "washington-heights":"Washington Heights","hamilton-heights":"Hamilton Heights",
+    "morningside-heights":"Morningside Heights","harlem":"Harlem",
+    "east-harlem":"East Harlem","spanish-harlem":"Spanish Harlem",
+    "upper-west-side":"Upper West Side","central-park":"Central Park",
+    "yorkville":"Yorkville","upper-east-side":"Upper East Side",
+    "lincoln-center":"Lincoln Center","columbus-circle":"Columbus Circle",
+    "theater-district":"Theater District","hells-kitchen":"Hell's Kitchen",
+    "midtown":"Midtown","garment-district":"Garment District",
+    "murray-hill":"Murray Hill","kips-bay":"Kips Bay",
+    "chelsea":"Chelsea","gramercy":"Gramercy",
+    "west-village":"West Village","greenwich-village":"Greenwich Village",
+    "east-village":"East Village","soho":"SoHo",
+    "chinatown":"Chinatown","lower-east-side":"Lower East Side",
+    "tribeca":"Tribeca","financial-district":"Financial District",
+    "city-hall":"City Hall"
+  };
+  var panel=document.getElementById("info-panel");
+  document.getElementById("panel-close").addEventListener("click",function(){panel.classList.remove("is-open")});
+})();
+</script>
+</body>
+</html>

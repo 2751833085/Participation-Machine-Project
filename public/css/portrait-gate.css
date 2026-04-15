@@ -1,0 +1,113 @@
+/* Full-screen mask when viewport is not a narrow portrait phone layout */
+
+.portrait-gate {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  box-sizing: border-box;
+  margin: 0;
+  padding: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right))
+    max(1.25rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--gate-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.portrait-gate__panel {
+  max-width: 24rem;
+  width: 100%;
+  padding: 1.65rem 1.45rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--gate-border) 42%, transparent);
+  background:
+    radial-gradient(120% 85% at 50% -15%, var(--gate-radial), transparent 55%),
+    color-mix(in srgb, var(--gate-surface) 96%, transparent);
+  box-shadow: var(--gate-shadow-outer), var(--gate-shadow-inner);
+  text-align: center;
+}
+
+.portrait-gate__visual-wrap {
+  position: relative;
+  width: min(6.75rem, 28vw);
+  height: min(6.75rem, 28vw);
+  margin: 0 auto 1.1rem;
+}
+
+.portrait-gate__visual-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--gate-border) 32%, transparent) 0%,
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+.portrait-gate__svg {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  color: var(--gate-icon);
+  filter: var(--gate-icon-drop);
+}
+
+.portrait-gate__kicker {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gate-border) 55%, var(--gate-text) 45%);
+}
+
+.portrait-gate__title {
+  margin: 0 0 0.85rem;
+  padding: 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.42rem, 3.8vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--gate-text);
+}
+
+.portrait-gate__text {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.94rem;
+  font-weight: 500;
+  line-height: 1.58;
+  letter-spacing: 0.01em;
+  color: var(--gate-text-muted);
+  text-align: center;
+}
+
+.portrait-gate__text strong {
+  font-weight: 700;
+  color: var(--gate-text);
+}
+
+/* Wide viewports or landscape: block interaction with the app behind */
+@media (min-width: 481px), (orientation: landscape) {
+  .portrait-gate {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait-gate {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
