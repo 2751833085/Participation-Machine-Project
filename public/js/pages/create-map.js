@@ -31,6 +31,7 @@ import {
   randomManhattanLandmarkSuggestions,
   searchPlacesWithManhattanFlag,
 } from "../services/geocoding.js";
+import { t } from "../lib/i18n.js";
 import * as loginPage from "./login.js";
 
 let mapCleanup = null;
@@ -107,11 +108,11 @@ export function render() {
         <div id="create-map-status"></div>
         <div class="card create-map-toolbar">
         <div class="create-map-toolbar-row">
-          <input type="search" id="create-map-search-q" class="input-grow" placeholder="Place name, or leave blank + Search" autocomplete="street-address" aria-label="Search Manhattan address" />
-          <button type="button" class="btn btn-primary" id="create-map-search-btn">Search</button>
+          <input type="search" id="create-map-search-q" class="input-grow" placeholder="${escapeHtml(t("create.searchPlaceholder"))}" autocomplete="street-address" aria-label="${escapeHtml(t("create.searchAria"))}" />
+          <button type="button" class="btn btn-primary" id="create-map-search-btn">${escapeHtml(t("create.searchButton"))}</button>
         </div>
         <div class="create-map-toolbar-row create-map-toolbar-row--full">
-          <button type="button" class="btn btn-ghost create-map-locate-full" id="create-map-locate-btn">Use my location</button>
+          <button type="button" class="btn btn-ghost create-map-locate-full" id="create-map-locate-btn">${escapeHtml(t("create.useMyLocation"))}</button>
         </div>
         <div id="create-map-results" class="create-map-results" hidden></div>
       </div>
@@ -183,7 +184,7 @@ export function render() {
           </div>
           <div class="form-field sheet-field">
             <label for="create-map-challenge-hint">Whole hunt hint <span class="label-optional">(optional)</span></label>
-            <input id="create-map-challenge-hint" name="challengeHint" type="text" maxlength="300" placeholder="Optional clue for the entire hunt" />
+            <input id="create-map-challenge-hint" name="challengeHint" type="text" maxlength="300" placeholder="${escapeHtml(t("create.huntHintPlaceholder"))}" />
           </div>
           <div class="form-field sheet-field">
             <div class="time-slider-label-row">
@@ -195,7 +196,7 @@ export function render() {
           </div>
           <div class="form-field sheet-field">
             <label for="create-map-hint">Hint <span class="label-optional">(optional)</span></label>
-            <input id="create-map-hint" name="hint" type="text" placeholder="Street or landmark clue" />
+            <input id="create-map-hint" name="hint" type="text" placeholder="${escapeHtml(t("create.hintPlaceholder"))}" />
           </div>
           <button type="submit" class="btn btn-primary btn-block sheet-submit" id="create-map-submit">Publish hunt</button>
         </form>

@@ -14,6 +14,7 @@ import {
 } from "../lib/state.js";
 import { syncUiThemeFromStorage } from "../lib/ui-theme.js";
 import { watchMeritPoints } from "../services/users.js";
+import { t } from "../lib/i18n.js";
 
 /** Inline SVG for portrait gate — decorative only (dialog has text labels). */
 const PORTRAIT_GATE_ILLU = `<svg class="portrait-gate__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="41" y="27" width="18" height="46" rx="3.5" opacity="0.3"/><rect x="38.5" y="30" width="23" height="40" rx="4"/><circle cx="50" cy="62" r="1.75" fill="currentColor" stroke="none"/><path d="M14 50a34 34 0 1 1 12-24" opacity="0.9"/><polyline points="10 36 14 28 22 33" opacity="0.9"/></svg>`;
@@ -45,14 +46,15 @@ function footer() {
 
 function appHeader() {
   const isGuest = !auth.currentUser;
-  const meritText = isGuest ? "Guest" : "0 PTS";
+  const meritText = isGuest ? t("shell.guest") : "0 PTS";
+  const toggleThemeLabel = t("shell.toggleTheme");
   return `
     <header class="app-header" role="banner">
       <div class="app-header-inner">
         <span class="brand">Tourgo</span>
         <div class="header-actions">
           <span class="merit-pill ${isGuest ? "is-guest" : ""}" data-merit-pill>${escapeHtml(meritText)}</span>
-          <button type="button" class="theme-toggle" id="theme-toggle-btn" aria-label="Toggle theme" title="Toggle theme">
+          <button type="button" class="theme-toggle" id="theme-toggle-btn" aria-label="${escapeHtml(toggleThemeLabel)}" title="${escapeHtml(toggleThemeLabel)}">
             <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
             <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
@@ -77,18 +79,18 @@ function mobileDock(activePage) {
   const profileActive = user ? DOCK_ICONS.profileFilled : DOCK_ICONS.signInFilled;
   const profileKey = user ? "profile" : "login";
   const createIcon = activePage === "create" ? DOCK_ICONS.plusFilled : DOCK_ICONS.plus;
-  const createCaption = "Create";
+  const createCaption = t("shell.nav.create");
   return `
     <nav class="app-dock app-dock--five" aria-label="App navigation">
       <div class="app-dock-inner app-dock-inner--five">
-        ${dockItem("#/", "hunts", "Hunts", DOCK_ICONS.hunts, DOCK_ICONS.huntsFilled)}
-        ${dockItem("#/favorited", "favorited", "Saved", DOCK_ICONS.favorited, DOCK_ICONS.favoritedFilled)}
+        ${dockItem("#/", "hunts", t("shell.nav.hunts"), DOCK_ICONS.hunts, DOCK_ICONS.huntsFilled)}
+        ${dockItem("#/favorited", "favorited", t("shell.nav.saved"), DOCK_ICONS.favorited, DOCK_ICONS.favoritedFilled)}
         <a class="mobile-tab mobile-tab-plus ${activePage === "create" ? "is-active" : ""}" href="#/create">
           <span class="mobile-tab-plus-circle">${createIcon}</span>
           <span class="mobile-tab-caption">${escapeHtml(createCaption)}</span>
         </a>
-        ${dockItem("#/leaderboard", "leaderboard", "Rank", DOCK_ICONS.leaderboard, DOCK_ICONS.leaderboardFilled)}
-        ${dockItem(profileHref, profileKey, "Profile", profileIdle, profileActive)}
+        ${dockItem("#/leaderboard", "leaderboard", t("shell.nav.rank"), DOCK_ICONS.leaderboard, DOCK_ICONS.leaderboardFilled)}
+        ${dockItem(profileHref, profileKey, t("shell.nav.profile"), profileIdle, profileActive)}
       </div>
     </nav>
   `;
@@ -99,13 +101,15 @@ function wireHeaderMerit() {
   const pillEls = () => document.querySelectorAll("[data-merit-pill]");
   watchMeritPoints((text) => {
     const pointText = String(text || "0");
-    const pillText = pointText === "Guest" ? "Guest" : `${pointText} PTS`;
+    const guestText = t("shell.guest");
+    const isGuest = pointText === "Guest" || pointText === guestText;
+    const pillText = isGuest ? guestText : `${pointText} PTS`;
     pointsEls().forEach((el) => {
       el.textContent = pointText;
     });
     pillEls().forEach((el) => {
       el.textContent = pillText;
-      el.classList.toggle("is-guest", pointText === "Guest");
+      el.classList.toggle("is-guest", isGuest);
     });
   });
 }
@@ -131,11 +135,15 @@ export function renderShell(inner, activePage = "home", options = {}) {
   const footerHtml = stripChrome ? "" : footer();
   const dockHtml = stripChrome ? "" : mobileDock(activePage);
   const headerHtml = stripChrome ? "" : appHeader();
+  const offlineText = t("shell.offlineText");
+  const reconnectText = t("shell.offlineReconnect");
+  const portraitTitle = t("shell.portraitTitle");
+  const portraitBody = t("shell.portraitBody");
   document.body.innerHTML = `
     <div id="network-offline-banner" class="network-offline-banner" role="alert" aria-live="assertive" aria-hidden="true">
       <div class="network-offline-banner__inner">
-        <p class="network-offline-banner__text"><span aria-hidden="true">\u26A0\uFE0E</span> Unable to connect to the internet. When your connection is back, tap <strong>Reconnect</strong> to reload this page.</p>
-        <button type="button" class="btn btn-secondary btn-small network-offline-banner__reconnect" id="network-reconnect-btn">Reconnect</button>
+        <p class="network-offline-banner__text"><span aria-hidden="true">\u26A0\uFE0E</span> ${escapeHtml(offlineText)}</p>
+        <button type="button" class="btn btn-secondary btn-small network-offline-banner__reconnect" id="network-reconnect-btn">${escapeHtml(reconnectText)}</button>
       </div>
     </div>
     ${headerHtml}
@@ -146,9 +154,9 @@ export function renderShell(inner, activePage = "home", options = {}) {
       <div class="portrait-gate__panel">
         <div class="portrait-gate__visual-wrap" aria-hidden="true">${PORTRAIT_GATE_ILLU}</div>
         <p class="portrait-gate__kicker">Tourgo</p>
-        <h2 id="portrait-gate-heading" class="portrait-gate__title">Turn to portrait</h2>
+        <h2 id="portrait-gate-heading" class="portrait-gate__title">${escapeHtml(portraitTitle)}</h2>
         <p id="portrait-gate-desc" class="portrait-gate__text">
-          This experience is built for <strong>narrow phone screens</strong> in portrait. Use a mobile device or rotate your display to continue.
+          ${escapeHtml(portraitBody)}
         </p>
       </div>
     </div>

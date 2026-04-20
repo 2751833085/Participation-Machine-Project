@@ -375,6 +375,106 @@ body[data-modal-open] .leaflet-container {
   justify-content: flex-end;
 }
 
+.language-picker-trigger {
+  width: 100%;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.02rem;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.language-picker-trigger:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.language-picker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.language-picker-trigger__chevron {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.language-picker-modal {
+  width: min(22rem, calc(100vw - 2rem));
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  max-height: min(86dvh, 36rem);
+}
+
+.language-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.2rem 0 1rem;
+  max-height: min(54dvh, 18rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.language-picker-option {
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s var(--ease),
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+
+.language-picker-option:hover {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border));
+  background: var(--surface-2);
+}
+
+.language-picker-option.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.language-picker-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.language-picker-cancel-icon {
+  width: 2.4rem;
+  min-width: 2.4rem;
+  padding-left: 0;
+  padding-right: 0;
+  font-size: 1.05rem;
+}
+
 /* Animated confirm / success overlays */
 .modal-backdrop--animating {
   opacity: 0;

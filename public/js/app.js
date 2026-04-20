@@ -21,6 +21,7 @@ import { installDockVisualViewportSync } from "./lib/dock-visual-viewport.js";
 import { installDockHashNavigation } from "./lib/dock-navigation.js";
 import { startAuthAndRoutes } from "./lib/auth-bootstrap.js";
 import { unwatchMeritPoints } from "./services/users.js";
+import { applyDocumentLanguage } from "./lib/i18n.js";
 
 let currentCleanup = null;
 
@@ -97,6 +98,7 @@ installDockVisualViewportSync();
 renderShell('<p class="loading">Connecting…</p>', "home", { stripChrome: true });
 bindSystemThemeListener();
 syncUiThemeFromStorage();
+applyDocumentLanguage();
 
 startAuthAndRoutes({ scheduleRoute });
 

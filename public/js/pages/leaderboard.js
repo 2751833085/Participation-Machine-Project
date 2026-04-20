@@ -16,6 +16,7 @@ import {
   where,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 import { avatarSrcForId } from "../services/users.js";
+import { t } from "../lib/i18n.js";
 
 const PAGE_LIMIT = 80;
 
@@ -116,8 +117,8 @@ export async function render() {
       `
       <div class="page-narrow leaderboard-page">
         <section class="hero leaderboard-hero" aria-labelledby="leaderboard-heading">
-          <p class="hero-eyebrow">Rankings</p>
-          <h1 class="hero-title" id="leaderboard-heading">Leaderboard</h1>
+          <p class="hero-eyebrow">${escapeHtml(t("shell.nav.rank"))}</p>
+          <h1 class="hero-title" id="leaderboard-heading">${escapeHtml(t("shell.nav.rank"))}</h1>
           <p class="lead hero-lead">Public names and avatars, sorted by lifetime Merits.</p>
         </section>
         <section class="leaderboard-you-card" aria-label="Your rank">

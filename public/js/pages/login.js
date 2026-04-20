@@ -14,6 +14,14 @@ import {
   prefersGoogleAuthRedirect,
   signInWithGoogle,
 } from "../services/auth.js";
+import {
+  getAppLanguage,
+  getLanguageNativeName,
+  getSupportedLanguages,
+  setAppLanguage,
+  t,
+} from "../lib/i18n.js";
+import { openLanguagePickerModal } from "../components/modal.js";
 
 const ERR = {
   "auth/unauthorized-domain":
@@ -284,6 +292,14 @@ export function render() {
                   </div>
                   <div id="login-status" class="welcome-signin-final-status"></div>
                   <div class="welcome-signin-final-panel card">
+                    <div class="form-field" style="margin-bottom:0.75rem;text-align:left;">
+                      <label for="login-language-open">${escapeHtml(t("login.languageSectionTitle"))} <em class="profile-theme-beta-badge">${escapeHtml(t("common.languageBetaBadge"))}</em></label>
+                      <button type="button" id="login-language-open" class="language-picker-trigger" aria-haspopup="dialog">
+                        <span id="login-language-current">${escapeHtml(getLanguageNativeName(getAppLanguage()))}</span>
+                        <span class="language-picker-trigger__chevron" aria-hidden="true">▾</span>
+                      </button>
+                      <p class="field-hint" style="margin-top:0.35rem;">${escapeHtml(t("common.languageBetaNote"))} ${escapeHtml(t("login.languageSectionHint"))}</p>
+                    </div>
                     <button type="button" class="btn btn-primary btn-block" id="btn-google">Continue with Google</button>
                     <button type="button" class="btn btn-secondary btn-block" id="btn-guest">Continue as guest</button>
                     <p class="card-meta" style="margin-top:0.75rem;text-align:center;">Guests can browse hunts and the map. Sign in with Google to start a run, create hunts, or view the photo review feed.</p>
@@ -321,6 +337,22 @@ export function render() {
   const statusEl = document.getElementById("login-status");
   const btn = document.getElementById("btn-google");
   const btnGuest = document.getElementById("btn-guest");
+  const langOpenBtn = document.getElementById("login-language-open");
+  langOpenBtn?.addEventListener("click", async () => {
+    const next = await openLanguagePickerModal({
+      title: `${t("common.language")} (${t("common.languageBetaBadge")})`,
+      options: getSupportedLanguages().map((lang) => ({
+        code: lang.code,
+        label: lang.nativeName,
+      })),
+      selectedCode: getAppLanguage(),
+      confirmText: "Confirm",
+      cancelText: "Cancel",
+    });
+    if (next && next !== getAppLanguage()) {
+      setAppLanguage(next);
+    }
+  });
 
   const redirectErr = consumeAuthRedirectError();
   if (redirectErr && statusEl) {

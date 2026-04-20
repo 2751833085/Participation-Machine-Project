@@ -22,6 +22,7 @@ import {
 } from "../components/hunt-feed-markup.js";
 import { watchFavoritedHuntIds, setHuntFavorited } from "../services/favorites.js";
 import { showAppToast } from "../lib/app-toast.js";
+import { t } from "../lib/i18n.js";
 
 let listUnsub = null;
 let favUnsub = null;
@@ -174,10 +175,10 @@ export function render() {
         <p class="hero-eyebrow home-hero-eyebrow" id="hero-eyebrow"></p>
         <h1 class="hero-title" id="hero-dynamic-title">Good day.</h1>
         <p class="hero-context" id="hero-context" hidden></p>
-        <p class="lead hero-lead">Timed photo hunts on Manhattan streets — open a listing to preview checkpoints, then start the clock. Tap <strong>+</strong> below to publish your own.</p>
+        <p class="lead hero-lead">${escapeHtml(t("home.heroLead")).replace(/\+/g, "<strong>+</strong>")}</p>
       </section>
       <section class="section home-feed-section" aria-labelledby="hunts-feed-heading">
-        <h2 id="hunts-feed-heading" class="section-title">Open hunts</h2>
+        <h2 id="hunts-feed-heading" class="section-title">${escapeHtml(t("home.openHunts"))}</h2>
         <div id="hunts-feed" class="hunt-list loading" role="region" aria-busy="true">Loading…</div>
       </section>
     </div>

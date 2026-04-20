@@ -11,6 +11,7 @@
     (function () {
       var colorKey = "tm-theme";
       var uiThemeKey = "tm-ui-theme";
+      var langKey = "tm-lang";
       var s = localStorage.getItem(colorKey);
       var t =
         s === "light" || s === "dark"
@@ -21,8 +22,10 @@
       var uiTheme = localStorage.getItem(uiThemeKey) === "material-design"
         ? "material-design"
         : "classical";
+      var lang = localStorage.getItem(langKey) || "en";
       document.documentElement.dataset.theme = t;
       document.documentElement.dataset.uiTheme = uiTheme;
+      document.documentElement.lang = lang;
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">

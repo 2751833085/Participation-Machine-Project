@@ -54,6 +54,38 @@
   --gate-icon-drop: drop-shadow(0 3px 14px color-mix(in srgb, #000 55%, transparent));
 }
 
+/* Language-aware typography: keep English look; add local-script fallbacks only. */
+html:lang(zh),
+html:lang(ja),
+html:lang(ko) {
+  --font-ui:
+    "DM Sans",
+    "PingFang SC",
+    "PingFang TC",
+    "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN",
+    "Noto Sans CJK SC",
+    "Noto Sans CJK TC",
+    "Noto Sans JP",
+    "Noto Sans KR",
+    "Microsoft YaHei",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  --font-display:
+    "Cormorant Garamond",
+    "Playfair Display",
+    "Noto Serif CJK SC",
+    "Noto Serif CJK TC",
+    "Noto Serif JP",
+    "Noto Serif KR",
+    "Songti SC",
+    "Songti TC",
+    "STSong",
+    Georgia,
+    serif;
+}
+
 html[data-theme="light"] {
   /* Wide-screen / landscape portrait gate — matches light app chrome */
   --gate-bg: #e8dfd2;

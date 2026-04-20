@@ -15,6 +15,7 @@ import {
   createChallenge,
   inferManhattanPoint,
 } from "../services/challenges.js";
+import { t } from "../lib/i18n.js";
 import * as loginPage from "./login.js";
 
 function spotRowHtml(i) {
@@ -26,7 +27,7 @@ function spotRowHtml(i) {
       </div>
       <div class="form-field">
         <label>Hint (optional)</label>
-        <input type="text" name="hint" placeholder="Landmark or street clue" />
+        <input type="text" name="hint" placeholder="${escapeHtml(t("create.basicHintPlaceholder"))}" />
       </div>
     </div>
   `;
@@ -65,7 +66,7 @@ export function render() {
       </div>
       <div class="form-field">
         <label for="hunt-hint">Whole hunt hint <span class="label-optional">(optional)</span></label>
-        <input id="hunt-hint" name="huntHint" type="text" maxlength="300" placeholder="Optional clue for the entire hunt" />
+        <input id="hunt-hint" name="huntHint" type="text" maxlength="300" placeholder="${escapeHtml(t("create.huntHintPlaceholder"))}" />
       </div>
       <div id="spot-rows" class="spot-rows">${rows()}</div>
       <div class="stack" style="flex-direction: row; flex-wrap: wrap;">

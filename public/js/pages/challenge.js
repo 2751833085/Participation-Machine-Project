@@ -272,14 +272,15 @@ export async function render(id) {
       }
     }
     const favClass = favorited ? "hunt-favorite-btn is-favorited" : "hunt-favorite-btn";
-    const favLabel = favorited ? "Favorited" : "Favorite";
+    const favLabel = favorited ? "Unfavorite hunt" : "Favorite hunt";
+    const favIcon = favorited ? "★" : "☆";
 
     renderShell(
       `
       <a href="#/" class="back-link">← All hunts</a>
       <div class="challenge-hunt-toolbar">
-        <button type="button" class="${favClass}" id="challenge-favorite-btn" aria-pressed="${favorited ? "true" : "false"}" data-challenge-id="${escapeHtml(id)}">
-          <span class="hunt-favorite-btn__text">${favLabel}</span>
+        <button type="button" class="${favClass}" id="challenge-favorite-btn" aria-label="${favLabel}" title="${favLabel}" aria-pressed="${favorited ? "true" : "false"}" data-challenge-id="${escapeHtml(id)}">
+          <span class="hunt-favorite-btn__icon" aria-hidden="true">${favIcon}</span>
         </button>
         <button type="button" class="hunt-row__report challenge-hunt-report" aria-label="Report this hunt" title="Report" data-challenge-id="${escapeHtml(id)}" data-challenge-title="${escapeHtml(c.title || "Hunt")}">\u26A0\uFE0E</button>
       </div>
@@ -337,8 +338,10 @@ export async function render(id) {
         await setHuntFavorited(id, !on);
         favBtn.classList.toggle("is-favorited", !on);
         favBtn.setAttribute("aria-pressed", !on ? "true" : "false");
-        const label = favBtn.querySelector(".hunt-favorite-btn__text");
-        if (label) label.textContent = !on ? "Favorited" : "Favorite";
+        const icon = favBtn.querySelector(".hunt-favorite-btn__icon");
+        if (icon) icon.textContent = !on ? "★" : "☆";
+        favBtn.setAttribute("aria-label", !on ? "Unfavorite hunt" : "Favorite hunt");
+        favBtn.setAttribute("title", !on ? "Unfavorite hunt" : "Favorite hunt");
         showAppToast(!on ? "Added to Favorited." : "Removed from Favorited.");
       } catch (err) {
         showAppToast(err?.message || "Could not update favorites.");

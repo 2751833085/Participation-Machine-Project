@@ -173,7 +173,7 @@
 
 .hunt-row__report {
   position: absolute;
-  top: 0.35rem;
+  top: 2.4rem;
   right: 0.35rem;
   z-index: 2;
   width: 1.85rem;
@@ -3757,35 +3757,42 @@ body.admin-app {
 .hunt-favorite-btn {
   position: absolute;
   top: 0.35rem;
-  left: 0.35rem;
+  right: 0.35rem;
   z-index: 3;
   margin: 0;
-  padding: 0.22rem 0.42rem;
-  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  padding: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  border: none;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: transparent;
   color: var(--text-muted);
-  font-family: var(--font-ui);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
+  font-size: 1.05rem;
+  line-height: 1;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   -webkit-tap-highlight-color: transparent;
   transition:
     color 0.2s var(--ease),
-    border-color 0.2s var(--ease),
-    background 0.2s var(--ease);
+    opacity 0.2s var(--ease);
+  opacity: 0.72;
 }
 
 .hunt-favorite-btn:hover {
   color: var(--text);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  opacity: 1;
 }
 
-.hunt-favorite-btn.is-favorited .hunt-favorite-btn__text {
+.hunt-favorite-btn.is-favorited .hunt-favorite-btn__icon {
+  color: var(--accent);
+}
+
+.hunt-favorite-btn__icon {
   color: var(--text);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .hunt-favorite-btn:focus-visible {
@@ -3795,16 +3802,20 @@ body.admin-app {
 
 .challenge-hunt-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.35rem 0 0.85rem;
-  padding-left: var(--title-text-inset);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0.85rem auto;
+  width: fit-content;
 }
 
 .challenge-hunt-toolbar .hunt-favorite-btn {
   position: static;
+  width: 2.1rem;
+  height: 2.1rem;
+  min-width: 2.1rem;
+  font-size: 1.18rem;
+  opacity: 0.82;
 }
 
 .challenge-hunt-toolbar .challenge-hunt-report {

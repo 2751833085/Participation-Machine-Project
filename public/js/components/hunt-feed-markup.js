@@ -45,7 +45,8 @@ export function huntListItemHtml(row) {
     ? `<div class="hunt-row__thumb hunt-row__thumb--has-img"><img class="hunt-row__thumb-img" src="${escapeHtml(thumb)}" alt="" loading="lazy" width="120" height="120" decoding="async" /></div>`
     : `<div class="hunt-row__thumb hunt-row__thumb--empty" role="img" aria-label=""></div>`;
   const favClass = row.isFavorited ? " hunt-favorite-btn is-favorited" : " hunt-favorite-btn";
-  const favLabel = row.isFavorited ? "Favorited" : "Favorite";
+  const favLabel = row.isFavorited ? "Unfavorite hunt" : "Favorite hunt";
+  const favIcon = row.isFavorited ? "★" : "☆";
   return `
             <li class="hunt-list-item">
               <div class="hunt-list-item-wrap">
@@ -57,8 +58,8 @@ export function huntListItemHtml(row) {
                     <p class="hunt-row__meta">${escapeHtml(row.areaLabel || "NYC")}</p>
                   </div>
                 </a>
-                <button type="button" class="${favClass.trim()}" aria-pressed="${row.isFavorited ? "true" : "false"}" data-challenge-id="${cid}" data-challenge-title="${titleAttr}">
-                  <span class="hunt-favorite-btn__text">${favLabel}</span>
+                <button type="button" class="${favClass.trim()}" aria-label="${favLabel}" title="${favLabel}" aria-pressed="${row.isFavorited ? "true" : "false"}" data-challenge-id="${cid}" data-challenge-title="${titleAttr}">
+                  <span class="hunt-favorite-btn__icon" aria-hidden="true">${favIcon}</span>
                 </button>
                 <button type="button" class="hunt-row__report" aria-label="Report this hunt" title="Report" data-challenge-id="${cid}" data-challenge-title="${titleAttr}">\u26A0\uFE0E</button>
               </div>

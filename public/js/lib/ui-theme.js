@@ -21,12 +21,14 @@ const UI_THEME_REGISTRY = Object.freeze([
     id: UI_THEME_MATERIAL_DESIGN,
     label: "Material Design",
     beta: true,
-    implemented: true,
+    implemented: false,
   }),
 ]);
 
 function getThemeById(id) {
-  return UI_THEME_REGISTRY.find((theme) => theme.id === id) || null;
+  return (
+    UI_THEME_REGISTRY.find((theme) => theme.id === id && theme.implemented) || null
+  );
 }
 
 export function getUiThemeRegistry() {

@@ -11,13 +11,22 @@ import {
   setThemePreference,
 } from "../lib/state.js";
 import {
-  getUiThemeDefinition,
   getUiThemePreference,
   setUiThemePreference,
   syncUiThemeFromStorage,
-  UI_THEME_MATERIAL_DESIGN,
 } from "../lib/ui-theme.js";
-import { openAlertModal, openConfirmModal } from "../components/modal.js";
+import {
+  getAppLanguage,
+  getLanguageNativeName,
+  getSupportedLanguages,
+  setAppLanguage,
+  t,
+} from "../lib/i18n.js";
+import {
+  openAlertModal,
+  openConfirmModal,
+  openLanguagePickerModal,
+} from "../components/modal.js";
 import { signOutUser } from "../services/auth.js";
 import {
   deleteUserChallenge,
@@ -302,7 +311,7 @@ export function render() {
     `
     <div class="profile-v2 profile-page">
       <section class="hero profile-v2-hero" aria-labelledby="profile-heading">
-        <p class="hero-eyebrow">Profile</p>
+        <p class="hero-eyebrow">${escapeHtml(t("shell.nav.profile"))}</p>
         <h1 class="hero-title" id="profile-heading">Your account</h1>
         <p class="lead hero-lead">Avatar, name, merits, and app appearance.</p>
       </section>
@@ -446,6 +455,14 @@ export function render() {
       </section>
       <section class="card profile-v2-panel">
         <h2 class="profile-v2-section-title">Appearance</h2>
+        <div class="form-field" style="margin-bottom:0.75rem;">
+          <label for="profile-language-open">${escapeHtml(t("common.language"))} <em class="profile-theme-beta-badge">${escapeHtml(t("common.languageBetaBadge"))}</em></label>
+          <button type="button" id="profile-language-open" class="language-picker-trigger" aria-haspopup="dialog">
+            <span id="profile-language-current">${escapeHtml(getLanguageNativeName(getAppLanguage()))}</span>
+            <span class="language-picker-trigger__chevron" aria-hidden="true">▾</span>
+          </button>
+          <p class="field-hint">${escapeHtml(t("common.languageBetaNote"))} ${escapeHtml(t("common.languageSelectHelp"))}</p>
+        </div>
         <fieldset class="profile-theme-fieldset">
           <legend class="visually-hidden">Theme</legend>
           <div class="profile-theme-row">
@@ -472,12 +489,12 @@ export function render() {
               <span>Classical</span>
             </label>
             <label class="profile-theme-pill profile-ui-theme-pill">
-              <input type="radio" name="profile-ui-theme" value="material-design" />
-              <span>Material Design <em class="profile-theme-beta-badge">Beta</em></span>
+              <input type="radio" name="profile-ui-theme" value="material-design" disabled />
+              <span>Material Design <em class="profile-theme-beta-badge">Coming soon</em></span>
             </label>
           </div>
         </fieldset>
-        <p class="profile-theme-caption profile-theme-caption-beta">Switching to Beta may be unstable.</p>
+        <p class="profile-theme-caption profile-theme-caption-beta">Material Design is temporarily unavailable.</p>
       </section>
       <div class="profile-v2-actions">
         ${
@@ -492,6 +509,22 @@ export function render() {
   );
 
   const pref = getThemePreference();
+  const langOpenBtn = document.getElementById("profile-language-open");
+  langOpenBtn?.addEventListener("click", async () => {
+    const next = await openLanguagePickerModal({
+      title: `${t("common.language")} (${t("common.languageBetaBadge")})`,
+      options: getSupportedLanguages().map((lang) => ({
+        code: lang.code,
+        label: lang.nativeName,
+      })),
+      selectedCode: getAppLanguage(),
+      confirmText: "Confirm",
+      cancelText: "Cancel",
+    });
+    if (next && next !== getAppLanguage()) {
+      setAppLanguage(next);
+    }
+  });
   document.querySelectorAll('input[name="profile-theme"]').forEach((input) => {
     if (input.value === pref) input.checked = true;
     input.addEventListener("change", () => {
@@ -504,29 +537,11 @@ export function render() {
     .querySelectorAll('input[name="profile-ui-theme"]')
     .forEach((input) => {
       if (input.value === uiThemePref) input.checked = true;
-      input.addEventListener("change", async () => {
+      input.addEventListener("change", () => {
+        if (input.disabled) return;
         if (!input.checked) return;
         const nextThemeId = input.value;
-        const prevThemeId = getUiThemePreference();
-        if (nextThemeId === prevThemeId) return;
-        const nextTheme = getUiThemeDefinition(nextThemeId);
-        if (!nextTheme) return;
-        if (nextTheme.id === UI_THEME_MATERIAL_DESIGN && nextTheme.beta) {
-          const ok = await openConfirmModal({
-            title: "Enable Material Design Beta?",
-            message:
-              "Material Design Beta may be unstable and visual details can change while we improve it. Continue?",
-            confirmText: "Enable Beta",
-            cancelText: "Keep Classical",
-          });
-          if (!ok) {
-            const fallback = document.querySelector(
-              `input[name="profile-ui-theme"][value="${prevThemeId}"]`,
-            );
-            if (fallback) fallback.checked = true;
-            return;
-          }
-        }
+        if (nextThemeId === getUiThemePreference()) return;
         setUiThemePreference(nextThemeId);
         syncUiThemeFromStorage();
       });

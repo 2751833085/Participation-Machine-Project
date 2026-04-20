@@ -376,3 +376,117 @@ export function openAlertModal({
     okBtn.focus();
   });
 }
+
+/**
+ * Language picker modal: select first, apply on explicit confirm.
+ * @param {{
+ *   title: string,
+ *   options: { code: string, label: string }[],
+ *   selectedCode: string,
+ *   confirmText?: string,
+ *   cancelText?: string,
+ *   cancelIcon?: string,
+ * }} opts
+ * @returns {Promise<string|null>} selected language code when confirmed; null when canceled
+ */
+export function openLanguagePickerModal({
+  title,
+  options,
+  selectedCode,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  cancelIcon = "✕",
+}) {
+  return new Promise((resolve) => {
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.setAttribute("role", "presentation");
+
+    const dialog = document.createElement("div");
+    dialog.className = "modal-dialog language-picker-modal";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "language-picker-title");
+
+    const h = document.createElement("h2");
+    h.className = "modal-dialog-title";
+    h.id = "language-picker-title";
+    h.textContent = title;
+
+    const list = document.createElement("div");
+    list.className = "language-picker-list";
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-label", title);
+
+    let pendingCode = selectedCode;
+
+    const optionButtons = options.map((option) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "language-picker-option";
+      btn.dataset.code = option.code;
+      btn.setAttribute("role", "option");
+      btn.textContent = option.label;
+      if (option.code === pendingCode) {
+        btn.classList.add("is-selected");
+        btn.setAttribute("aria-selected", "true");
+      } else {
+        btn.setAttribute("aria-selected", "false");
+      }
+      btn.addEventListener("click", () => {
+        pendingCode = option.code;
+        optionButtons.forEach((el) => {
+          const on = el.dataset.code === pendingCode;
+          el.classList.toggle("is-selected", on);
+          el.setAttribute("aria-selected", on ? "true" : "false");
+        });
+      });
+      return btn;
+    });
+    optionButtons.forEach((btn) => list.appendChild(btn));
+
+    const actions = document.createElement("div");
+    actions.className = "modal-dialog-actions";
+
+    const cancelIconBtn = document.createElement("button");
+    cancelIconBtn.type = "button";
+    cancelIconBtn.className = "btn btn-ghost language-picker-cancel-icon";
+    cancelIconBtn.setAttribute("aria-label", cancelText);
+    cancelIconBtn.setAttribute("title", cancelText);
+    cancelIconBtn.textContent = cancelIcon;
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "btn btn-primary";
+    confirmBtn.textContent = confirmText;
+
+    actions.append(cancelIconBtn, confirmBtn);
+    dialog.append(h, list, actions);
+    backdrop.appendChild(dialog);
+
+    const finish = (value) => {
+      backdrop.remove();
+      setModalMapBlur(false);
+      document.removeEventListener("keydown", onKey);
+      resolve(value);
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape") finish(null);
+      if (e.key === "Enter") finish(pendingCode);
+    };
+    document.addEventListener("keydown", onKey);
+
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) finish(null);
+    });
+    dialog.addEventListener("click", (e) => e.stopPropagation());
+
+    cancelIconBtn.addEventListener("click", () => finish(null));
+    confirmBtn.addEventListener("click", () => finish(pendingCode));
+
+    mountModalWithSheetEnter(backdrop);
+    const selectedBtn = optionButtons.find((btn) => btn.dataset.code === pendingCode);
+    (selectedBtn || optionButtons[0] || cancelIconBtn).focus();
+  });
+}

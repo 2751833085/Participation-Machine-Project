@@ -16,6 +16,7 @@ import {
   wireHuntListThumbnails,
 } from "../components/hunt-feed-markup.js";
 import { promptGuestNeedsSignIn } from "../services/auth.js";
+import { t } from "../lib/i18n.js";
 
 let feedEl = null;
 let favorUnsub = null;
@@ -134,12 +135,12 @@ export function render() {
     `
     <div class="home-page favorited-page">
       <section class="hero" aria-labelledby="favorited-heading">
-        <p class="hero-eyebrow">Collection</p>
-        <h1 class="hero-title" id="favorited-heading">Saved hunts</h1>
+        <p class="hero-eyebrow">${escapeHtml(t("shell.nav.saved"))}</p>
+        <h1 class="hero-title" id="favorited-heading">${escapeHtml(t("shell.nav.saved"))}</h1>
         <p class="lead hero-lead">Hunts you bookmarked for later.</p>
       </section>
       <section class="section home-feed-section" aria-labelledby="favorited-feed-heading">
-        <h2 id="favorited-feed-heading" class="section-title">Saved</h2>
+        <h2 id="favorited-feed-heading" class="section-title">${escapeHtml(t("shell.nav.saved"))}</h2>
         <div id="favorited-feed" class="hunt-list loading" role="region" aria-busy="true">Loading…</div>
       </section>
     </div>
