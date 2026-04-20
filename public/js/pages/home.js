@@ -10,52 +10,30 @@ import {
   hydrateHomeHeroContext,
 } from "../lib/nyc-hero-context.js";
 import { escapeHtml } from "../lib/utils.js";
+import { nav } from "../lib/router.js";
+import { auth } from "../firebase-init.js";
+import { userHasWonChallenge } from "../services/attempts.js";
 import { watchChallenges } from "../services/challenges.js";
+import { promptGuestNeedsSignIn } from "../services/auth.js";
+import { promptReportChallenge } from "../services/reports.js";
+import {
+  huntListItemHtml,
+  wireHuntListThumbnails,
+} from "../components/hunt-feed-markup.js";
+import { watchFavoritedHuntIds, setHuntFavorited } from "../services/favorites.js";
+import { showAppToast } from "../lib/app-toast.js";
 
 let listUnsub = null;
+let favUnsub = null;
 let lastSnap = null;
-
-function prefersReducedMotion() {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
-  );
-}
-
-/** Fade/slide in after first paint of loaded content (not on later Firestore updates). */
-function revealFeedAfterFirstLoad(feedEl) {
-  if (prefersReducedMotion()) return;
-  feedEl.classList.add("hunt-list--reveal-once");
-  feedEl.addEventListener(
-    "animationend",
-    () => feedEl.classList.remove("hunt-list--reveal-once"),
-    { once: true },
-  );
-}
+let huntFeedEl = null;
+/** @type {Set<string>} */
+let favoritedIds = new Set();
 
 function setFeedContent(feedEl, html) {
-  const fromLoading = feedEl.classList.contains("loading");
   feedEl.innerHTML = html;
   feedEl.classList.remove("loading");
   feedEl.removeAttribute("aria-busy");
-  if (fromLoading) revealFeedAfterFirstLoad(feedEl);
-}
-
-/** Reveal each row thumbnail only after decode/load (avoids pop-in over the list fade). */
-function wireHuntListThumbnails(feedEl) {
-  if (!feedEl) return;
-  const imgs = feedEl.querySelectorAll("img.hunt-row__thumb-img");
-  for (const img of imgs) {
-    const reveal = () => {
-      img.classList.add("is-loaded");
-    };
-    if (img.complete && img.naturalWidth > 0) {
-      reveal();
-      continue;
-    }
-    img.addEventListener("load", reveal, { once: true });
-    img.addEventListener("error", reveal, { once: true });
-  }
 }
 
 function renderFeedInto(feedEl) {
@@ -74,30 +52,116 @@ function renderFeedInto(feedEl) {
   setFeedContent(
     feedEl,
     `<ul class="hunt-list-stack">${docs
-    .map((d) => {
-      const c = d.data();
-      const spots = c.spots?.length ?? 0;
-      const mins = c.timeLimitMinutes ?? "?";
-      const thumb = c.spots?.[0]?.imageUrl;
-      const thumbBlock = thumb
-        ? `<div class="hunt-row__thumb hunt-row__thumb--has-img"><img class="hunt-row__thumb-img" src="${escapeHtml(thumb)}" alt="" loading="lazy" width="96" height="96" decoding="async" /></div>`
-        : `<div class="hunt-row__thumb hunt-row__thumb--empty" role="img" aria-label=""></div>`;
-      return `
-            <li class="hunt-list-item">
-              <a class="hunt-row" href="#/challenge/${d.id}">
-                ${thumbBlock}
-                <div class="hunt-row__body">
-                  <span class="badge hunt-row__badge">${spots} checkpoint${spots === 1 ? "" : "s"} · ${mins} min</span>
-                  <h3 class="hunt-row__title">${escapeHtml(c.title || "Untitled hunt")}</h3>
-                  <p class="hunt-row__meta">${escapeHtml(c.areaLabel || "NYC")}</p>
-                </div>
-              </a>
-            </li>
-          `;
-    })
-    .join("")}</ul>`,
+      .map((d) => {
+        const c = d.data();
+        const spots = c.spots?.length ?? 0;
+        const mins = c.timeLimitMinutes ?? "?";
+        const thumb = c.spots?.[0]?.imageUrl;
+        const titleRaw = c.title || "Untitled hunt";
+        const createdBy = c.createdBy || "";
+        return huntListItemHtml({
+          id: d.id,
+          title: titleRaw,
+          spots,
+          mins,
+          areaLabel: c.areaLabel || "NYC",
+          thumb,
+          createdBy,
+          isFavorited: favoritedIds.has(d.id),
+        });
+      })
+      .join("")}</ul>`,
   );
   wireHuntListThumbnails(feedEl);
+}
+
+async function onHuntFeedClick(e) {
+  const row = e.target.closest("a.hunt-row");
+  if (row && huntFeedEl?.contains(row) && auth.currentUser) {
+    const href = row.getAttribute("href") || "";
+    const m = href.match(/#\/challenge\/([^/?#]+)/);
+    if (m) {
+      const challengeId = m[1];
+      const createdBy = row.getAttribute("data-created-by") || "";
+      if (createdBy && createdBy === auth.currentUser.uid) {
+        e.preventDefault();
+        nav(`#/hunt-review/${challengeId}`);
+        return;
+      }
+      e.preventDefault();
+      try {
+        const won = await userHasWonChallenge(
+          auth.currentUser.uid,
+          challengeId,
+        );
+        if (won) {
+          nav(`#/hunt-review/${challengeId}`);
+        } else {
+          nav(`#/challenge/${challengeId}`);
+        }
+      } catch {
+        nav(`#/challenge/${challengeId}`);
+      }
+      return;
+    }
+  }
+
+  const fav = e.target.closest(".hunt-favorite-btn");
+  if (fav && huntFeedEl?.contains(fav)) {
+    e.preventDefault();
+    e.stopPropagation();
+    const challengeId = fav.getAttribute("data-challenge-id");
+    if (!challengeId) return;
+    if (!auth.currentUser) {
+      if (
+        await promptGuestNeedsSignIn("Saving favorites needs a Google account.")
+      ) {
+        return;
+      }
+      return;
+    }
+    const was = favoritedIds.has(challengeId);
+    try {
+      await setHuntFavorited(challengeId, !was);
+      if (!was) favoritedIds.add(challengeId);
+      else favoritedIds.delete(challengeId);
+      renderFeedInto(huntFeedEl);
+      showAppToast(was ? "Removed from Favorited." : "Added to Favorited.");
+    } catch (err) {
+      showAppToast(err?.message || "Could not update favorites.");
+    }
+    return;
+  }
+
+  const btn = e.target.closest(".hunt-row__report");
+  if (!btn || !huntFeedEl?.contains(btn)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const challengeId = btn.getAttribute("data-challenge-id");
+  if (!challengeId) return;
+  const huntTitle = btn.getAttribute("data-challenge-title") || "Hunt";
+  await promptReportChallenge({ challengeId, huntTitle });
+}
+
+function bindFavoritesWatch() {
+  if (favUnsub) {
+    favUnsub();
+    favUnsub = null;
+  }
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    favoritedIds = new Set();
+    if (lastSnap && huntFeedEl) renderFeedInto(huntFeedEl);
+    return;
+  }
+  favUnsub = watchFavoritedHuntIds(
+    uid,
+    (ids) => {
+      favoritedIds = new Set(ids);
+      if (lastSnap && huntFeedEl) renderFeedInto(huntFeedEl);
+    },
+    () => {},
+  );
 }
 
 export function render() {
@@ -121,7 +185,9 @@ export function render() {
     "hunts",
   );
 
-  const feed = document.getElementById("hunts-feed");
+  huntFeedEl = document.getElementById("hunts-feed");
+  huntFeedEl?.addEventListener("click", onHuntFeedClick);
+  bindFavoritesWatch();
 
   applyHomeHeroEyebrowDateOnly();
   applyHomeHeroTitle();
@@ -134,16 +200,16 @@ export function render() {
       lastSnap = snap;
       if (!snap.size) {
         setFeedContent(
-          feed,
+          huntFeedEl,
           '<p class="empty-state">No hunts yet. Be the first to <a href="#/create">create one</a>.</p>',
         );
         return;
       }
-      renderFeedInto(feed);
+      renderFeedInto(huntFeedEl);
     },
     (err) => {
       setFeedContent(
-        feed,
+        huntFeedEl,
         `<div class="status-banner error">${escapeHtml(err.message)}</div>`,
       );
     },
@@ -151,6 +217,13 @@ export function render() {
 }
 
 export function cleanup() {
+  huntFeedEl?.removeEventListener("click", onHuntFeedClick);
+  huntFeedEl = null;
+  if (favUnsub) {
+    favUnsub();
+    favUnsub = null;
+  }
+  favoritedIds = new Set();
   if (listUnsub) {
     listUnsub();
     listUnsub = null;

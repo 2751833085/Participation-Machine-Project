@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "DM Sans", sans-serif; background: #f3ece2; padding: 16px; color: #221e1a; }
+.section { margin-bottom: 14px; }
+.label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #9a9288; margin-bottom: 8px; }
+.radii { display: flex; flex-wrap: wrap; gap: 8px; }
+.r-box { background: #fdf9f3; border: 1px solid #dcd3c4; width: 56px; height: 40px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+.r-name { font-size: 9px; font-weight: 700; color: #5e564c; margin-top: 4px; }
+.shadows { display: flex; flex-wrap: wrap; gap: 12px; }
+.s-box { background: #fdf9f3; border: 1px solid #dcd3c4; width: 64px; height: 44px; display: flex; align-items: center; justify-content: center; }
+.s-sm { box-shadow: 0 1px 3px rgba(42,37,32,.06); }
+.s-md { box-shadow: 0 10px 28px rgba(42,37,32,.08); }
+.s-lg { box-shadow: 0 22px 56px rgba(42,37,32,.12); }
+.s-name { font-size: 9px; font-weight: 700; text-align: center; color: #5e564c; margin-top: 4px; }
+.s-wrap { text-align: center; }
+.spacing { display: flex; gap: 6px; align-items: flex-end; }
+.sp-box { background: rgba(92,74,56,.18); border-radius: 3px; width: 14px; }
+.sp-label { font-size: 9px; font-weight: 600; color: #5e564c; text-align: center; margin-top: 3px; }
+.sp-wrap { display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+  <div class="section">
+    <div class="label">Border radius</div>
+    <div class="radii">
+      <div style="text-align:center"><div class="r-box" style="border-radius:10px">sm</div><div class="r-name">10px</div></div>
+      <div style="text-align:center"><div class="r-box" style="border-radius:14px">md</div><div class="r-name">14px</div></div>
+      <div style="text-align:center"><div class="r-box" style="border-radius:16px">base</div><div class="r-name">16px</div></div>
+      <div style="text-align:center"><div class="r-box" style="border-radius:22px">lg</div><div class="r-name">22px</div></div>
+      <div style="text-align:center"><div class="r-box" style="border-radius:999px">pill</div><div class="r-name">999px</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="label">Shadows</div>
+    <div class="shadows">
+      <div class="s-wrap"><div class="s-box s-sm" style="border-radius:10px"></div><div class="s-name">sm</div></div>
+      <div class="s-wrap"><div class="s-box s-md" style="border-radius:10px"></div><div class="s-name">md</div></div>
+      <div class="s-wrap"><div class="s-box s-lg" style="border-radius:10px"></div><div class="s-name">lg</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="label">Spacing scale</div>
+    <div class="spacing">
+      <div class="sp-wrap"><div class="sp-box" style="height:4px"></div><div class="sp-label">0.25r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:8px"></div><div class="sp-label">0.5r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:12px"></div><div class="sp-label">0.75r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:16px"></div><div class="sp-label">1r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:20px"></div><div class="sp-label">1.25r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:24px"></div><div class="sp-label">1.5r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:32px"></div><div class="sp-label">2r</div></div>
+      <div class="sp-wrap"><div class="sp-box" style="height:48px"></div><div class="sp-label">3r tap</div></div>
+    </div>
+  </div>
+</body>
+</html>

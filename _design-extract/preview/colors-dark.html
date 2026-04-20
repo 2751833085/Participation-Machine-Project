@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #141210; --surface: #221e19; --surface-2: #2e2923;
+  --text: #f5f0e8; --text-muted: #9a9288;
+  --border: #3d3730; --accent: #c4a574; --brown: #b09a86;
+}
+body { font-family: "DM Sans", sans-serif; background: var(--bg); padding: 16px; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.swatch { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.swatch-color { height: 56px; }
+.swatch-label { padding: 6px 8px; background: var(--surface); }
+.swatch-name { font-size: 11px; font-weight: 600; color: var(--text); }
+.swatch-value { font-size: 10px; color: var(--text-muted); font-family: monospace; }
+.section-label { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin: 12px 0 6px; grid-column: 1/-1; }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div class="section-label">Backgrounds</div>
+  <div class="swatch"><div class="swatch-color" style="background:#141210"></div><div class="swatch-label"><div class="swatch-name">--bg</div><div class="swatch-value">#141210</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#1c1915"></div><div class="swatch-label"><div class="swatch-name">--bg-warm</div><div class="swatch-value">#1c1915</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#221e19"></div><div class="swatch-label"><div class="swatch-name">--surface</div><div class="swatch-value">#221e19</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#2e2923"></div><div class="swatch-label"><div class="swatch-name">--surface-2</div><div class="swatch-value">#2e2923</div></div></div>
+
+  <div class="section-label">Text &amp; Border</div>
+  <div class="swatch"><div class="swatch-color" style="background:#f5f0e8"></div><div class="swatch-label"><div class="swatch-name">--text</div><div class="swatch-value">#f5f0e8</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#9a9288"></div><div class="swatch-label"><div class="swatch-name">--text-muted</div><div class="swatch-value">#9a9288</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#3d3730"></div><div class="swatch-label"><div class="swatch-name">--border</div><div class="swatch-value">#3d3730</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#524a41"></div><div class="swatch-label"><div class="swatch-name">--border-strong</div><div class="swatch-value">#524a41</div></div></div>
+
+  <div class="section-label">Accent</div>
+  <div class="swatch"><div class="swatch-color" style="background:#c4a574"></div><div class="swatch-label"><div class="swatch-name">--accent</div><div class="swatch-value">#c4a574</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#d4b88a"></div><div class="swatch-label"><div class="swatch-name">--accent-hover</div><div class="swatch-value">#d4b88a</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:rgba(196,165,116,.18)"></div><div class="swatch-label"><div class="swatch-name">--accent-soft</div><div class="swatch-value">rgba 18%</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#b09a86"></div><div class="swatch-label"><div class="swatch-name">--brown</div><div class="swatch-value">#b09a86</div></div></div>
+</div>
+</body>
+</html>

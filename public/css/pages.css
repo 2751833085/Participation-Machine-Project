@@ -8,6 +8,16 @@
   margin-bottom: clamp(1.35rem, 3.5dvh, 1.85rem);
 }
 
+/* Hunts, Saved, Create, Rank, Profile — same hero band as home (tighter than generic .hero). */
+.home-page .hero,
+.create-map-page .hero,
+.create-mode-page .hero.create-mode-hero,
+.leaderboard-page .hero.leaderboard-hero,
+.profile-page .hero.profile-v2-hero {
+  padding: clamp(0.55rem, 2.2dvh, 1rem) 0 clamp(0.45rem, 1.4dvh, 0.85rem);
+  margin-bottom: clamp(0.5rem, 1.6dvh, 0.85rem);
+}
+
 .hero-eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
@@ -32,13 +42,13 @@
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: clamp(2.2rem, 11vw, 2.75rem);
+  font-size: var(--text-hero);
   font-weight: 600;
-  line-height: 1.06;
+  line-height: var(--leading-tight);
   margin: 0 0 clamp(0.45rem, 1.5dvh, 0.65rem);
   padding-left: var(--title-text-inset);
   max-width: 22ch;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-tight);
 }
 
 /* NYC time + weather — assistant-style line under the greeting */
@@ -50,10 +60,44 @@
   line-height: 1.5;
   font-style: italic;
   color: var(--text-muted);
+  /* Reserve two line boxes (line-height 1.5 → 2 × 1.5em = 3em) so wrap doesn’t push content below. */
+  min-height: 3em;
+}
+
+@supports (min-height: 2lh) {
+  .hero-context {
+    min-height: 2lh;
+  }
+}
+
+.home-page .hero-context {
+  margin-bottom: clamp(0.32rem, 1.1dvh, 0.5rem);
 }
 
 .hero-context[hidden] {
   display: none !important;
+}
+
+@keyframes homeHeroCtxIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-context.hero-context--enter {
+  animation: homeHeroCtxIn 0.52s var(--ease) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-context.hero-context--enter {
+    animation: none;
+  }
 }
 
 .hero-lead {
@@ -64,13 +108,31 @@
   line-height: 1.58;
 }
 
+/* Home explainer — clearly subordinate to greeting + NYC context line */
+.home-page .hero-lead {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  font-weight: 400;
+  max-width: 40rem;
+  color: color-mix(in srgb, var(--text-muted) 82%, var(--border) 18%);
+}
+
+.home-page .hero-lead strong {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .home-feed-section .section-title {
   margin-bottom: 1.15rem;
   font-size: clamp(1.38rem, 5vw, 1.72rem);
 }
 
 .home-page .section {
-  padding-top: 0.15rem;
+  padding-top: 0;
+}
+
+.home-page .home-feed-section .section-title {
+  margin-bottom: 0.85rem;
 }
 
 /* ── Open hunts — compact list (mobile + desktop) ── */
@@ -84,29 +146,6 @@
   background: var(--surface);
   border: 1px dashed var(--border);
   border-radius: var(--radius);
-}
-
-@keyframes huntListReveal {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* First paint after Firestore: smooth reveal (class removed when animation ends; later updates don’t re-run). */
-.hunt-list.hunt-list--reveal-once {
-  animation: huntListReveal 0.48s var(--ease) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hunt-list.hunt-list--reveal-once {
-    animation: none;
-  }
 }
 
 .hunt-list > .empty-state,
@@ -128,11 +167,153 @@
   margin: 0;
 }
 
+.hunt-list-item-wrap {
+  position: relative;
+}
+
+.hunt-row__report {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-variant-emoji: text;
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.hunt-row__report:hover {
+  opacity: 0.95;
+  color: var(--text);
+}
+
+.hunt-row__report:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+.report-hunt-dialog {
+  max-width: min(94vw, 26rem);
+  text-align: left;
+}
+
+.report-hunt-sub {
+  margin-top: -0.15rem;
+  font-weight: 500;
+  color: var(--text);
+  /* Match modal title optical left edge (title uses --title-text-inset). */
+  padding-left: var(--title-text-inset);
+  margin-left: 0;
+}
+
+.report-hunt-fieldset {
+  border: none;
+  margin: 0.35rem 0 0.65rem;
+  padding: 0;
+}
+
+.report-hunt-legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  padding: 0;
+}
+
+.report-hunt-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin-bottom: 0.32rem;
+}
+
+.report-hunt-option input[type="radio"] {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.report-hunt-option label {
+  font-size: 0.86rem;
+  line-height: 1.38;
+  cursor: pointer;
+}
+
+.report-hunt-details-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin: 0.35rem 0 0.25rem;
+}
+
+.report-hunt-details {
+  width: 100%;
+  resize: vertical;
+  min-height: 4.25rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.94rem;
+  line-height: 1.45;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text) 4%, transparent);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.report-hunt-details::placeholder {
+  color: var(--text-muted);
+}
+
+.report-hunt-details:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--text) 4%, transparent),
+    0 0 0 3px var(--accent-soft);
+}
+
+.report-hunt-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.4rem 0 0;
+  line-height: 1.4;
+}
+
+.report-hunt-err {
+  margin: 0.45rem 0 0;
+}
+
 .hunt-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  min-height: 6rem;
+  min-height: 7.5rem;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 92%, var(--accent-soft));
@@ -159,12 +340,12 @@
 }
 
 .hunt-row__thumb {
-  flex: 0 0 6rem;
-  width: 6rem;
-  height: 6rem;
-  min-width: 6rem;
-  min-height: 6rem;
-  max-height: 6rem;
+  flex: 0 0 7.5rem;
+  width: 7.5rem;
+  height: 7.5rem;
+  min-width: 7.5rem;
+  min-height: 7.5rem;
+  max-height: 7.5rem;
   background: var(--bg-warm);
   overflow: hidden;
 }
@@ -206,23 +387,25 @@
 .hunt-row__body {
   flex: 1 1 0;
   min-width: 0;
-  padding: 0.72rem 0.95rem 0.78rem;
+  padding: 0.88rem 1rem 0.92rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.22rem;
+  gap: 0.28rem;
+}
+
+.hunt-list-item-wrap .hunt-row__body {
+  padding-right: 2.2rem;
 }
 
 .hunt-row__badge {
-  align-self: flex-start;
   margin: 0;
-  font-size: 0.62rem;
 }
 
 .hunt-row__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.06rem;
+  font-size: 1.22rem;
   font-weight: 600;
   line-height: 1.22;
   color: var(--text);
@@ -230,7 +413,7 @@
 
 .hunt-row__meta {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   color: var(--text-muted);
   line-height: 1.35;
 }
@@ -502,6 +685,10 @@ html[data-theme="dark"] .city-blip {
   font-weight: 600;
   padding-top: 0.65rem;
   padding-bottom: 0.65rem;
+}
+
+.welcome-signin-final-panel #btn-guest {
+  margin-top: 0.55rem;
 }
 
 .welcome-slide--signin .welcome-signin-final-panel .auth-legal {
@@ -782,29 +969,7 @@ html[data-theme="dark"] .city-blip {
 .profile-v2 {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  /* Align with hunts: .hero top padding + eyebrow row (~1.5rem) so the title sits similarly */
-  padding-top: calc(clamp(1rem, 4dvh, 1.75rem) + 1.5rem);
-}
-
-.profile-v2-hero {
-  margin-bottom: 0.35rem;
-}
-
-.profile-page-title {
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 10vw, 2.75rem);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
-  margin: 0 0 0.4rem;
-}
-
-.profile-page-lead {
-  margin: 0 0 0.15rem;
-  max-width: none;
-  font-size: 0.96rem;
-  line-height: 1.55;
+  gap: 0.85rem;
 }
 
 .profile-v2-section-title {
@@ -892,6 +1057,72 @@ html[data-theme="dark"] .city-blip {
   color: var(--text-muted);
 }
 
+.profile-v2-merit-how {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+}
+
+.profile-v2-merit-how-summary {
+  cursor: pointer;
+  list-style: none;
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.profile-v2-merit-how-summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-v2-merit-how[open] .profile-v2-merit-how-summary {
+  margin-bottom: 0.6rem;
+}
+
+.profile-v2-merit-how-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-v2-merit-lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.48;
+  color: var(--text);
+}
+
+.profile-v2-merit-steps {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.86rem;
+  line-height: 1.48;
+  color: var(--text-muted);
+}
+
+.profile-v2-merit-steps li + li {
+  margin-top: 0.5rem;
+}
+
+.profile-v2-merit-steps strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.profile-v2-merit-foot {
+  margin: 0.85rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .profile-v2-panel {
   padding: 1.05rem 1.15rem 1.15rem;
 }
@@ -911,6 +1142,213 @@ html[data-theme="dark"] .city-blip {
 
 .profile-v2-signout {
   border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+}
+
+.profile-v2-published-gate-lead {
+  margin: -0.15rem 0 0.85rem;
+  max-width: 36rem;
+}
+
+/* Full-screen page: published hunts (moved to body in JS; covers dock + FAB). */
+.profile-published-sheet {
+  position: fixed;
+  inset: 0;
+  /* Above dock (150), below app modals (200) so delete/edit confirms stay on top. */
+  z-index: 190;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  height: 100dvh;
+  max-height: 100dvh;
+  max-height: 100svh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  overscroll-behavior: contain;
+}
+
+.profile-published-sheet[hidden] {
+  display: none !important;
+}
+
+.profile-published-sheet__backdrop {
+  display: none;
+}
+
+.profile-published-sheet__panel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  background: var(--surface);
+}
+
+.profile-published-sheet__panel.card {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.profile-published-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 2.65rem);
+  padding-right: calc(1.1rem + env(safe-area-inset-right, 0px));
+  padding-bottom: 0.55rem;
+  padding-left: calc(1.1rem + env(safe-area-inset-left, 0px));
+  flex-shrink: 0;
+}
+
+.profile-published-sheet__panel .profile-published-sheet__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  /* Match / exceed home hero-title presence */
+  font-size: clamp(2.35rem, 11.5vw, 3.05rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+  color: var(--text);
+  padding-left: var(--title-text-inset);
+}
+
+.profile-published-sheet__close {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.profile-published-sheet__lead {
+  margin: 0;
+  padding: 0.45rem calc(1.1rem + env(safe-area-inset-right, 0px)) 0.85rem
+    calc(1.1rem + env(safe-area-inset-left, 0px));
+  padding-left: calc(1.1rem + env(safe-area-inset-left, 0px) + var(--title-text-inset));
+  max-width: none;
+  flex-shrink: 0;
+}
+
+.profile-published-sheet__body {
+  flex: 1 1 0%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 calc(1.1rem + env(safe-area-inset-right, 0px))
+    calc(1.1rem + env(safe-area-inset-bottom, 0px))
+    calc(1.1rem + env(safe-area-inset-left, 0px));
+  background: var(--surface);
+}
+
+.profile-published-sheet__body .profile-published-list {
+  flex: 1 1 auto;
+  width: 100%;
+  align-self: stretch;
+}
+
+.profile-published-list {
+  min-height: 2.5rem;
+}
+
+.profile-published-stack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-published-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.85rem;
+  background: var(--bg);
+}
+
+.profile-published-row-title {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.profile-published-row-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.profile-published-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  align-items: center;
+}
+
+.profile-published-actions .btn-small {
+  min-height: 2.25rem;
+}
+
+/* Delete — high-visibility destructive action */
+.profile-published-actions .profile-published-delete {
+  color: #fffcf5;
+  background: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 78%, #1a0f0f);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--danger) 42%, transparent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.profile-published-actions .profile-published-delete:hover:not(:disabled) {
+  color: #fffcf5;
+  background: color-mix(in srgb, var(--danger) 88%, #000);
+  border-color: color-mix(in srgb, var(--danger) 65%, #000);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--danger) 48%, transparent);
+}
+
+.profile-published-actions .profile-published-delete:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--danger) 75%, var(--text));
+  outline-offset: 2px;
+}
+
+.profile-published-empty {
+  margin: 0.25rem 0 0;
+}
+
+.profile-edit-hunt-form {
+  margin: 0.75rem 0 0;
+  text-align: left;
+}
+
+.profile-edit-hunt-form .form-field {
+  margin-bottom: 0.85rem;
+}
+
+.profile-edit-hunt-err {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
   color: var(--danger);
 }
 
@@ -1083,6 +1521,10 @@ html[data-theme="dark"] .city-blip {
   min-width: 0;
 }
 
+.profile-ui-theme-fieldset {
+  margin-top: 0.55rem;
+}
+
 .profile-theme-row {
   display: flex;
   flex-wrap: wrap;
@@ -1134,6 +1576,37 @@ html[data-theme="dark"] .city-blip {
   color: var(--accent);
 }
 
+.profile-theme-caption {
+  margin: 0.55rem 0 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.profile-theme-caption-beta {
+  margin-top: 0.4rem;
+}
+
+.profile-ui-theme-pill span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-theme-beta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.38rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 65%, transparent);
+  color: inherit;
+  font-style: normal;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .user-pill {
   font-size: 0.72rem;
   font-weight: 600;
@@ -1174,10 +1647,6 @@ html[data-theme="dark"] .city-blip {
 }
 
 /* ── Create mode picker (#/create) ── */
-
-.create-mode-page .create-mode-hero.hero {
-  margin-bottom: clamp(1rem, 2.5dvh, 1.35rem);
-}
 
 .create-mode-grid {
   display: grid;
@@ -3064,13 +3533,14 @@ body.admin-app {
   line-height: 1.45;
 }
 
-/* Hunt review — listing photos, then run submissions vs others */
+/* Hunt review — listing photos, restart/start CTA, then run submissions vs others */
 .hunt-review-official-host {
   margin: 0.75rem 0 0;
 }
 
 .hunt-review-official-lead {
   margin: 0.35rem 0 0.75rem;
+  padding-left: var(--title-text-inset);
   max-width: 42rem;
   line-height: 1.45;
 }
@@ -3086,8 +3556,26 @@ body.admin-app {
 
 .hunt-review-lead {
   margin: 0.35rem 0 1.25rem;
+  padding-left: var(--title-text-inset);
   max-width: 42rem;
   line-height: 1.45;
+}
+
+.hunt-review-run-pack {
+  margin: 0.65rem 0 0.85rem;
+  max-width: 28rem;
+}
+
+.hunt-review-run-card {
+  padding: 0.85rem 1rem;
+}
+
+.hunt-review-run-status {
+  margin-top: 0.5rem;
+}
+
+.hunt-review-run-status:empty {
+  display: none;
 }
 
 .hunt-review-section {
@@ -3111,6 +3599,7 @@ body.admin-app {
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.75rem;
+  padding-left: var(--title-text-inset);
   color: var(--text-muted);
 }
 
@@ -3145,7 +3634,18 @@ body.admin-app {
   font-size: 0.95rem;
   font-weight: 600;
   margin: 0 0 0.65rem;
+  padding-left: var(--title-text-inset);
   color: var(--text);
+}
+
+.hunt-review-section .hunt-review-empty,
+.hunt-review-section > .hunt-review-gate {
+  padding-left: var(--title-text-inset);
+}
+
+/* Match section-title text column; default 1rem card padding was one inset too far right */
+.hunt-review-section .run-photo-card {
+  padding: 1rem 1rem 1rem var(--title-text-inset);
 }
 
 .hunt-challenge-hint {
@@ -3250,4 +3750,336 @@ body.admin-app {
 
 .challenge-start-map-host .leaflet-control-attribution {
   display: none !important;
+}
+
+/* ── Hunt list: favorite + report (preview uses same favorite control) ── */
+
+.hunt-favorite-btn {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.22rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.hunt-favorite-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.hunt-favorite-btn.is-favorited .hunt-favorite-btn__text {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.hunt-favorite-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.challenge-hunt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.85rem;
+  padding-left: var(--title-text-inset);
+}
+
+.challenge-hunt-toolbar .hunt-favorite-btn {
+  position: static;
+}
+
+.challenge-hunt-toolbar .challenge-hunt-report {
+  position: static;
+  width: 2.1rem;
+  height: 2.1rem;
+  min-width: 2.1rem;
+  opacity: 0.75;
+}
+
+/* ── Toast (favorite / errors) ── */
+
+.app-toast-host {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 0;
+  right: 0;
+  z-index: 178;
+  display: flex;
+  justify-content: center;
+  padding: 0.45rem 0.75rem;
+  pointer-events: none;
+}
+
+.app-toast {
+  pointer-events: auto;
+  max-width: min(92vw, 28rem);
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  transition:
+    opacity 0.28s var(--ease),
+    transform 0.28s var(--ease);
+}
+
+.app-toast--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-toast--out {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+}
+
+/* ── Leaderboard ── */
+
+.leaderboard-you-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  margin-bottom: 1rem;
+}
+
+.leaderboard-you-card__avatar-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  background: var(--bg-warm);
+  flex-shrink: 0;
+}
+
+.leaderboard-you-card__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.leaderboard-you-card__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.leaderboard-you-card__kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.leaderboard-you-card__line {
+  margin: 0.12rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.leaderboard-you-card__number {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.leaderboard-block {
+  margin-bottom: 1rem;
+}
+
+.leaderboard-block__title {
+  margin: 0 0 0.7rem 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.leaderboard-podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.leaderboard-podium__slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.leaderboard-podium__avatar-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--bg-warm);
+}
+
+.leaderboard-podium__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.leaderboard-podium__name {
+  margin: 0;
+  max-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-podium__merit {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.leaderboard-podium__bar {
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  border-bottom: none;
+  background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface-2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.76rem;
+}
+
+.leaderboard-podium__bar--1 {
+  height: 88px;
+}
+
+.leaderboard-podium__bar--2 {
+  height: 72px;
+}
+
+.leaderboard-podium__bar--3 {
+  height: 60px;
+}
+
+.leaderboard-card {
+  padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.leaderboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.leaderboard-row.is-you {
+  background: color-mix(in srgb, var(--accent-soft) 62%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.leaderboard-row--standalone {
+  margin-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-bottom: none;
+}
+
+.leaderboard-row:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-row__rank {
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 1.75rem;
+}
+
+.leaderboard-row__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.leaderboard-row__avatar--empty {
+  display: inline-block;
+  background: var(--surface-2);
+}
+
+.leaderboard-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.leaderboard-row__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-row__merit {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
 }

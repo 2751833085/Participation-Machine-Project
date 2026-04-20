@@ -22,14 +22,18 @@ public/
 │   └── pages.css              # 页面特定：Hero、Hunt Grid、地图、登录、个人
 │
 ├── js/
-│   ├── app.js                 # ★ 应用入口：路由表 + 生命周期管理
+│   ├── app.js                 # ★ 应用入口：路由 flush 队列、shell 启动、hash 监听
 │   ├── firebase-init.js       # Firebase 初始化（auth, db, storage）
 │   ├── image-utils.js         # 图片压缩工具
 │   ├── recaptcha.js           # reCAPTCHA v3 加载与执行
 │   │
-│   ├── lib/                   # 核心库（纯工具，无业务逻辑）
-│   │   ├── router.js          #   hash 路由解析 + 导航
-│   │   ├── state.js           #   主题管理 + 登录返回地址
+│   ├── lib/                   # 路由、状态、工具（与页面解耦）
+│   │   ├── router.js          #   hash 解析 + `nav()`
+│   │   ├── route-dispatch.js  #   ★ `page`/`id` → 具体页面 render（新路由主要改这里 + router）
+│   │   ├── route-events.js    #   合并路由 flush（nav / hashchange / auth）
+│   │   ├── dock-navigation.js #   底部 Dock 内链接触发 `requestRoute`
+│   │   ├── auth-bootstrap.js  #   Auth 持久化、`authStateReady`、首帧 `scheduleRoute`
+│   │   ├── state.js           #   主题、登录返回、guest 会话等
 │   │   └── utils.js           #   escapeHtml, formatCountdown 等
 │   │
 │   ├── services/              # 数据服务层（Firestore / Auth / Storage）

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "DM Sans", sans-serif; background: #f3ece2; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.banner { padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; line-height: 1.4; border: 1px solid transparent; }
+.banner.ok    { background: rgba(74,107,79,.15); border-color: rgba(74,107,79,.3); color: #221e1a; }
+.banner.error { background: rgba(168,72,72,.12); border-color: rgba(168,72,72,.3); color: #221e1a; }
+.banner.info  { background: rgba(122,92,69,.12); border-color: rgba(122,92,69,.25); color: #221e1a; }
+.swatch-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.swatch { border-radius: 10px; overflow: hidden; border: 1px solid #dcd3c4; }
+.swatch-color { height: 48px; }
+.swatch-label { padding: 5px 8px; background: #fdf9f3; }
+.swatch-name { font-size: 11px; font-weight: 600; color: #221e1a; }
+.swatch-value { font-size: 10px; color: #5e564c; font-family: monospace; }
+.label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #5e564c; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="label">Semantic colors</div>
+<div class="swatch-row">
+  <div class="swatch"><div class="swatch-color" style="background:#4a6b4f"></div><div class="swatch-label"><div class="swatch-name">--ok</div><div class="swatch-value">#4a6b4f</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#a84848"></div><div class="swatch-label"><div class="swatch-name">--danger</div><div class="swatch-value">#a84848</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#5c4a38"></div><div class="swatch-label"><div class="swatch-name">--accent</div><div class="swatch-value">#5c4a38</div></div></div>
+</div>
+<div class="label" style="margin-top:10px">Status banners (light)</div>
+<div class="banner ok">You finished in time. Merits added to your profile.</div>
+<div class="banner error">Time is up. Try another hunt!</div>
+<div class="banner info">Time left: <strong>04:32</strong></div>
+</body>
+</html>

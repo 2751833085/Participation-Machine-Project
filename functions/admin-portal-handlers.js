@@ -130,6 +130,13 @@ async function deleteChallengeCascade(db, bucket, challengeId) {
   for (const pd of photos.docs) {
     await deleteRunPhotoDeep(db, bucket, pd.id);
   }
+  const reports = await db
+    .collection("challengeReports")
+    .where("challengeId", "==", challengeId)
+    .get();
+  for (const rd of reports.docs) {
+    await rd.ref.delete();
+  }
   await db.collection("challenges").doc(challengeId).delete();
 
   if (bucket) {

@@ -9,7 +9,10 @@ import {
   saveAuthReturn,
   consumeAuthReturn,
   clearStoredAuthReturn,
+  clearGuestSession,
+  isGuestSession,
 } from "../lib/state.js";
+import { openAlertModal } from "../components/modal.js";
 import {
   GoogleAuthProvider,
   getRedirectResult,
@@ -19,6 +22,28 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-auth.js";
 
 const AUTH_REDIRECT_ERR_KEY = "tm-auth-redirect-error";
+
+/** Guest session: browse only — needs Google sign-in for writes, runs, comments, create, profile edits. */
+const GUEST_SIGNIN_MESSAGE =
+  "You’re browsing as a guest. Sign in with Google to create hunts, join runs, upload checkpoint photos, comment or react on photos, and edit your profile.";
+
+export function isGuestBrowsing() {
+  return isGuestSession() && !auth.currentUser;
+}
+
+/**
+ * If the user is in guest browse mode, shows a single alert and returns true (caller should stop).
+ */
+export async function promptGuestNeedsSignIn(detail) {
+  if (!isGuestBrowsing()) return false;
+  const message = detail ? `${detail} ${GUEST_SIGNIN_MESSAGE}` : GUEST_SIGNIN_MESSAGE;
+  await openAlertModal({
+    title: "Sign in with Google",
+    message,
+    okText: "OK",
+  });
+  return true;
+}
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
@@ -106,6 +131,9 @@ export function afterAuthSuccess() {
 
 export async function ensureUser() {
   if (auth.currentUser) return;
+  if (await promptGuestNeedsSignIn("This action needs a Google account.")) {
+    throw new Error("Sign in required");
+  }
   redirectToLogin();
   throw new Error("Please sign in to continue.");
 }
@@ -119,6 +147,7 @@ export async function signInWithGoogle() {
 
 export async function signOutUser() {
   clearStoredAuthReturn();
+  clearGuestSession();
   try {
     sessionStorage.removeItem(AUTH_REDIRECT_ERR_KEY);
   } catch {

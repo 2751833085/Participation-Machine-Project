@@ -1,6 +1,39 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    /**
+     * User reports on hunt listings (Open hunts). Create = signed-in only;
+     * read open for admin dashboard (same model as attempts — tighten for production).
+     */
+    match /challengeReports/{reportId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll([
+          'challengeId', 'category', 'details', 'challengeTitleSnapshot',
+          'reporterUid', 'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'challengeId', 'category', 'details', 'challengeTitleSnapshot',
+          'reporterUid', 'createdAt'
+        ])
+        && request.resource.data.challengeId is string
+        && request.resource.data.challengeId.size() > 0
+        && request.resource.data.challengeId.size() < 256
+        && request.resource.data.category is string
+        && request.resource.data.category in [
+          'spam_misleading', 'harassment', 'illegal', 'image_distressing',
+          'copyright', 'other'
+        ]
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 2000
+        && request.resource.data.challengeTitleSnapshot is string
+        && request.resource.data.challengeTitleSnapshot.size() <= 200
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/challenges/$(request.resource.data.challengeId));
+      allow update, delete: if false;
+    }
+
     match /challenges/{challengeId} {
       allow read: if true;
       allow create: if request.auth != null
@@ -39,6 +72,21 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
+
+      /** Saved hunts for the Favorited tab — one doc per challenge id. */
+      match /favoritedHunts/{challengeId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && challengeId is string
+          && challengeId.size() > 0
+          && challengeId.size() < 256
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt == request.time
+          && exists(/databases/$(database)/documents/challenges/$(challengeId));
+        allow delete: if request.auth != null && request.auth.uid == userId;
+        allow update: if false;
+      }
     }
 
     /** One doc per normalized username; uid owner. Used for unique display names. */

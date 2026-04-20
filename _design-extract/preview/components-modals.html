@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --surface: #fdf9f3; --bg: #f3ece2;
+  --text: #221e1a; --text-muted: #5e564c;
+  --border: #dcd3c4; --accent: #5c4a38; --accent-soft: rgba(92,74,56,.14);
+  --shadow-lg: 0 22px 56px rgba(42,37,32,.12);
+  --radius: 16px; --radius-sm: 10px; --tap: 48px;
+  --font-display: "Cormorant Garamond", serif;
+}
+body { font-family: "DM Sans", sans-serif; background: rgba(20,20,18,.45); padding: 20px 16px; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+.modal-dialog { width: 100%; max-width: 340px; padding: 1.35rem 1.4rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); }
+.modal-title { font-family: var(--font-display); font-size: clamp(1.45rem,5vw,1.75rem); font-weight: 600; margin: 0 0 .5rem .45rem; color: var(--text); }
+.modal-text { margin: 0 0 1.25rem; font-size: .92rem; color: var(--text-muted); line-height: 1.5; }
+.modal-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; padding: 0 1.1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: .875rem; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--accent); border-color: transparent; color: #fffcf5; box-shadow: 0 4px 14px rgba(92,74,56,.35); }
+.btn-ghost { background: transparent; box-shadow: none; border-color: transparent; }
+</style>
+</head>
+<body>
+  <div class="modal-dialog">
+    <h2 class="modal-title">Start the hunt?</h2>
+    <p class="modal-text">You'll have 30 minutes to photograph all 5 checkpoints. The timer starts immediately.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost">Cancel</button>
+      <button class="btn btn-primary">Start</button>
+    </div>
+  </div>
+</body>
+</html>

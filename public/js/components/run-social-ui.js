@@ -3,7 +3,9 @@
  */
 
 import { auth, db } from "../firebase-init.js";
+import { openAlertModal } from "./modal.js";
 import { escapeHtml } from "../lib/utils.js";
+import { isGuestBrowsing, promptGuestNeedsSignIn } from "../services/auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 import {
   addPhotoComment,
@@ -17,6 +19,20 @@ import {
 } from "../services/run-social.js";
 
 const ADMIN_PORTAL_UID = "__admin_portal__";
+
+async function assertCanUseSocialFeatures() {
+  if (auth.currentUser) return true;
+  if (isGuestBrowsing()) {
+    await promptGuestNeedsSignIn("Reactions and comments need a Google account.");
+    return false;
+  }
+  await openAlertModal({
+    title: "Sign in",
+    message: "Please sign in with Google to react or comment.",
+    okText: "OK",
+  });
+  return false;
+}
 
 function reactionButtonsHtml(prefix, counts, mine, disabled) {
   const d = disabled ? " disabled" : "";
@@ -85,6 +101,7 @@ async function readMyCommentVote(photoId, commentId, uid) {
 function bindPhotoRow(cardEl, photoId, uid) {
   cardEl.querySelectorAll(".run-react-row button[data-ph-act]").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      if (!(await assertCanUseSocialFeatures())) return;
       const act = btn.getAttribute("data-ph-act");
       const mine = await readMyPhotoVote(photoId, uid);
       try {
@@ -109,6 +126,7 @@ function bindPhotoRow(cardEl, photoId, uid) {
 function bindCommentRow(photoId, commentId, uid, container) {
   container.querySelectorAll("button[data-cv-act]").forEach((btn) => {
     btn.addEventListener("click", async () => {
+      if (!(await assertCanUseSocialFeatures())) return;
       const act = btn.getAttribute("data-cv-act");
       const mine = await readMyCommentVote(photoId, commentId, uid);
       try {
@@ -235,6 +253,7 @@ export function mountPhotoCard(cardEl, photo, uid) {
     if (cancel) cancel.hidden = true;
   });
   cardEl.querySelector(".run-comment-send")?.addEventListener("click", async () => {
+    if (!(await assertCanUseSocialFeatures())) return;
     const text = ta?.value || "";
     const parentId = parentIn?.value?.trim() || null;
     try {

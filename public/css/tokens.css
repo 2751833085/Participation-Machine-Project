@@ -4,6 +4,7 @@
   --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
   --font-ui: "DM Sans", system-ui, -apple-system, sans-serif;
   --radius-sm: 10px;
+  --radius-md: 14px;
   --radius: 16px;
   --radius-lg: 22px;
   --tap: 48px;
@@ -13,8 +14,33 @@
   --header-h: 3.5rem;
   --content-max: 100%;
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   /* Slight inset for page titles / hero kicker so type aligns cohesively */
   --title-text-inset: 0.45rem;
+
+  /* Design system — semantic type scale (Tourgo Design System.zip) */
+  --text-hero: clamp(2.2rem, 11vw, 2.75rem);
+  --text-h1: clamp(2.15rem, 10.5vw, 2.65rem);
+  --text-h2: clamp(1.42rem, 5.5vw, 1.72rem);
+  --text-h3: 1.1rem;
+  --text-modal-title: clamp(1.45rem, 5vw, 1.75rem);
+  --text-body: 1rem;
+  --text-lead: 0.95rem;
+  --text-sm: 0.92rem;
+  --text-xs: 0.88rem;
+  --text-2xs: 0.78rem;
+  --text-label: 0.78rem;
+  --text-badge: 0.65rem;
+  --text-caption: 0.58rem;
+  --tracking-tight: -0.03em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.12em;
+  --tracking-widest: 0.2em;
+  --leading-tight: 1.06;
+  --leading-snug: 1.22;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.58;
   /* Fallback before data-theme is set (inline script runs early) */
   --gate-bg: #1a1612;
   --gate-surface: #2c2620;

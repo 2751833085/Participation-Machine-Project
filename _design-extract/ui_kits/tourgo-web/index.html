@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tourgo — UI Kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "DM Sans", sans-serif;
+    background: #1a1714;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .phone-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .phone-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+  }
+  .phone-shell {
+    width: 375px;
+    height: 780px;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08);
+    background: #f3ece2;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-shell.dark { background: #141210; }
+
+  /* Notch */
+  .notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 32px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  /* Tweaks panel */
+  #tweaks-panel {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    background: #2a241c;
+    border: 1px solid #524a41;
+    border-radius: 14px;
+    padding: 16px;
+    width: 220px;
+    box-shadow: 0 22px 56px rgba(0,0,0,.35);
+    color: #f5f0e8;
+    font-family: "DM Sans", sans-serif;
+  }
+  #tweaks-panel h3 { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; color: #c4a574; }
+  #tweaks-panel label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9a9288; display: block; margin-bottom: 5px; }
+  #tweaks-panel select { width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid #524a41; background: #1c1915; color: #f5f0e8; font-size: 13px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="phone-stage">
+  <div class="phone-label">Tourgo Web App</div>
+  <div class="phone-shell" id="phone-root">
+    <div class="notch"></div>
+  </div>
+</div>
+
+<div id="tweaks-panel">
+  <h3>Tweaks</h3>
+  <label>Theme</label>
+  <select id="tweak-theme">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+  <label>Start screen</label>
+  <select id="tweak-screen">
+    <option value="home">Home</option>
+    <option value="challenge">Challenge detail</option>
+    <option value="run">Active run</option>
+    <option value="profile">Profile</option>
+    <option value="create">Create hunt</option>
+    <option value="leaderboard">Leaderboard</option>
+  </select>
+</div>
+
+<script type="text/babel" src="Shell.jsx"></script>
+<script type="text/babel" src="HuntCard.jsx"></script>
+<script type="text/babel" src="RunPage.jsx"></script>
+<script type="text/babel" src="ProfilePage.jsx"></script>
+
+<script type="text/babel">
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"theme":"light","startScreen":"home"}/*EDITMODE-END*/;
+
+// ── Sample data ──────────────────────────────────────────────
+const HUNTS = [
+  { id:'h1', title:'Central Park Circuit', meta:'5 checkpoints · 30 min', area:'Central Park', thumbGradient:'linear-gradient(135deg,#c8bfb0,#a89a88)' },
+  { id:'h2', title:'SoHo Gallery Sprint',  meta:'4 checkpoints · 20 min', area:'SoHo',         thumbGradient:'linear-gradient(135deg,#b8c4b0,#90a888)' },
+  { id:'h3', title:'Brooklyn Bridge Walk', meta:'6 checkpoints · 45 min', area:'Brooklyn',     thumbGradient:'linear-gradient(135deg,#c4baa8,#a89280)' },
+  { id:'h4', title:'Chinatown Bites',      meta:'3 checkpoints · 15 min', area:'Chinatown',    thumbGradient:'linear-gradient(135deg,#d0c0b0,#b0a090)' },
+];
+
+const SAMPLE_HUNT = {
+  id: 'h1', title: 'Central Park Circuit',
+  area: 'Central Park', timeLimit: 30,
+  description: 'A scenic loop through Central Park\'s most iconic spots.',
+  spots: [
+    { hint: 'Find the bronze angel by the fountain', gradient: 'linear-gradient(135deg,#c8bfb0,#a89a88)' },
+    { hint: 'Photograph the model sailboats on Conservatory Pond', gradient: 'linear-gradient(135deg,#b8c8b0,#90a878)' },
+    { hint: 'Capture the Belvedere Castle from below', gradient: 'linear-gradient(135deg,#c0b8c8,#908898)' },
+    { hint: 'Find the Alice in Wonderland statue', gradient: 'linear-gradient(135deg,#c8c0b0,#a89888)' },
+    { hint: 'Photograph Bow Bridge from the east bank', gradient: 'linear-gradient(135deg,#c4b8a8,#a49080)' },
+  ],
+};
+
+const LEADERBOARD = [
+  { rank:1, name:'trailblazer_nyc', merits:1240, avatar:'Male_1' },
+  { rank:2, name:'photo_hunter',    merits:980,  avatar:'Female_1' },
+  { rank:3, name:'citywalker',      merits:875,  avatar:'Boy' },
+  { rank:4, name:'manhattan_explorer', merits:720, avatar:'Cat' },
+  { rank:5, name:'streetwise',      merits:615,  avatar:'Female_2' },
+];
+
+// ── Page components ──────────────────────────────────────────
+
+function HomePage({ dark, onNav, favorites, onToggleFavorite }) {
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+  return (
+    <div>
+      <HeroSection
+        eyebrow="Saturday, April 19"
+        title="Good day."
+        context="Partly cloudy · 62°F · Manhattan"
+        lead='Timed photo hunts on Manhattan streets — open a listing to preview checkpoints, then start the clock. Tap <strong>+</strong> below to publish your own.'
+        dark={dark}
+      />
+      <div style={{ padding: '0 0 0 .45rem', marginBottom: '.85rem' }}>
+        <SectionTitle dark={dark}>Open hunts</SectionTitle>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
+        {HUNTS.map(h => (
+          <div key={h.id} style={{ position: 'relative' }}>
+            <HuntRow
+              title={h.title} meta={h.meta} areaLabel={h.area}
+              thumbGradient={h.thumbGradient} dark={dark}
+              favorited={favorites.has(h.id)}
+              onFavorite={() => onToggleFavorite(h.id)}
+              onClick={() => onNav('challenge', h)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChallengePage({ hunt, dark, onStart, onBack }) {
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+  return (
+    <div style={{ padding: '1rem 1rem 7rem' }}>
+      <button onClick={onBack} style={{ display:'inline-flex', alignItems:'center', gap:'.35rem', fontSize:'.85rem', fontWeight:600, color:C.textMuted, background:'none', border:'none', cursor:'pointer', marginBottom:'1rem', padding:0 }}>← Home</button>
+      <h1 style={{ fontFamily:'"Cormorant Garamond", serif', fontWeight:600, fontSize:'clamp(2.15rem,10.5vw,2.65rem)', lineHeight:1.12, margin:'0 0 .35rem .45rem', letterSpacing:'-.025em', color:C.text }}>{hunt.title}</h1>
+      <p style={{ margin:'0 0 .85rem .45rem', fontSize:'.88rem', color:C.textMuted }}>{hunt.spots.length} checkpoints · {hunt.timeLimit} min · {hunt.area}</p>
+      {hunt.description && <p style={{ margin:'0 0 1rem .45rem', fontSize:'.9rem', lineHeight:1.55, color:C.textMuted }}>{hunt.description}</p>}
+
+      {/* Checkpoint previews */}
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:'1.15rem 1.25rem', boxShadow:C.shadowMd, marginBottom:'1.25rem' }}>
+        <h2 style={{ fontFamily:'"Cormorant Garamond", serif', fontWeight:600, fontSize:'1.22rem', margin:'0 0 1rem', color:C.text }}>Checkpoints</h2>
+        {hunt.spots.map((s, i) => (
+          <div key={i} style={{ display:'flex', gap:'.85rem', alignItems:'center', marginBottom:i<hunt.spots.length-1?'.85rem':0, paddingBottom:i<hunt.spots.length-1?'.85rem':0, borderBottom:i<hunt.spots.length-1?`1px solid ${C.border}`:'none' }}>
+            <div style={{ width:64, height:64, borderRadius:10, background:s.gradient, border:`1px solid ${C.border}`, flexShrink:0 }} />
+            <div>
+              <strong style={{ fontSize:'.92rem', color:C.text, display:'block', marginBottom:3 }}>Checkpoint {i+1}</strong>
+              <p style={{ margin:0, fontSize:'.82rem', color:C.textMuted, lineHeight:1.45 }}>{s.hint}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={onStart} style={{
+        display:'flex', alignItems:'center', justifyContent:'center',
+        width:'100%', minHeight:52, borderRadius:10,
+        background:C.accent, border:'none', color:'#fffcf5',
+        fontFamily:'"DM Sans", sans-serif', fontSize:'1rem', fontWeight:600,
+        cursor:'pointer', letterSpacing:'.02em',
+        boxShadow:`0 4px 14px color-mix(in srgb, ${C.accent} 35%, transparent)`,
+      }}>Start hunt — {hunt.timeLimit} min</button>
+    </div>
+  );
+}
+
+function CreatePage({ dark }) {
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+  const [step, setStep] = React.useState(0); // 0=details, 1=checkpoints, 2=preview
+  const [title, setTitle] = React.useState('');
+  const [timeLimit, setTimeLimit] = React.useState('30');
+  const [area, setArea] = React.useState('');
+  const [spots, setSpots] = React.useState([
+    { hint:'', hasPhoto: false },
+    { hint:'', hasPhoto: false },
+    { hint:'', hasPhoto: false },
+  ]);
+
+  const steps = ['Details', 'Checkpoints', 'Preview'];
+
+  const inp = (val, onChange, placeholder) => (
+    <input value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{
+      width:'100%', minHeight:48, padding:'.55rem .85rem', borderRadius:10,
+      border:`1px solid ${C.border}`, background:C.bg, color:C.text,
+      fontFamily:'"DM Sans", sans-serif', fontSize:'1rem', boxSizing:'border-box',
+      outline:'none',
+    }} />
+  );
+
+  const lbl = text => (
+    <p style={{ margin:'0 0 .4rem .1rem', fontSize:'.72rem', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:C.textMuted }}>{text}</p>
+  );
+
+  return (
+    <div style={{ paddingBottom:'7rem' }}>
+      {/* Hero */}
+      <div style={{ padding:'clamp(.55rem,2.2dvh,1rem) 1rem clamp(.45rem,1.4dvh,.85rem)', borderBottom:`1px solid color-mix(in srgb, ${C.border} 85%, ${C.accentSoft})`, marginBottom:'1.25rem' }}>
+        <p style={{ margin:'0 0 .5rem .45rem', fontSize:'.72rem', fontWeight:700, letterSpacing:'.2em', textTransform:'uppercase', color:C.accent }}>Create</p>
+        <h1 style={{ margin:'0 0 0 .45rem', fontFamily:'"Cormorant Garamond", serif', fontSize:'clamp(2.2rem,11vw,2.75rem)', fontWeight:600, lineHeight:1.06, letterSpacing:'-.03em', color:C.text }}>New hunt</h1>
+      </div>
+
+      {/* Step indicator */}
+      <div style={{ display:'flex', alignItems:'center', padding:'0 1rem', marginBottom:'1.5rem', gap:0 }}>
+        {steps.map((s, i) => (
+          <React.Fragment key={s}>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, flex: i < steps.length-1 ? 'none' : 1 }}>
+              <div style={{
+                width:28, height:28, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                background: i < step ? C.accent : i === step ? C.accent : C.surface2,
+                border: `2px solid ${i <= step ? C.accent : C.border}`,
+                color: i <= step ? '#fffcf5' : C.textMuted,
+                fontSize:'.75rem', fontWeight:700,
+                transition:'background .2s, border-color .2s',
+              }}>
+                {i < step
+                  ? <svg width="12" height="10" viewBox="0 0 12 10"><path d="M1 5l3.5 3.5L11 1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : i+1
+                }
+              </div>
+              <span style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'.06em', textTransform:'uppercase', color: i===step ? C.accent : C.textMuted, whiteSpace:'nowrap' }}>{s}</span>
+            </div>
+            {i < steps.length-1 && (
+              <div style={{ flex:1, height:2, background: i < step ? C.accent : C.border, margin:'0 6px 16px', borderRadius:2, transition:'background .2s' }} />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div style={{ padding:'0 1rem' }}>
+        {/* Step 0 — Details */}
+        {step === 0 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'1.1rem' }}>
+            <div>
+              {lbl('Hunt title')}
+              {inp(title, setTitle, 'e.g. Brooklyn Bridge Walk')}
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.75rem' }}>
+              <div>
+                {lbl('Time limit')}
+                <div style={{ position:'relative' }}>
+                  {inp(timeLimit, setTimeLimit, '30')}
+                  <span style={{ position:'absolute', right:'.85rem', top:'50%', transform:'translateY(-50%)', fontSize:'.82rem', color:C.textMuted, pointerEvents:'none' }}>min</span>
+                </div>
+              </div>
+              <div>
+                {lbl('Checkpoints')}
+                <div style={{ display:'flex', gap:4 }}>
+                  {[2,3,4,5,6].map(n => (
+                    <button key={n} onClick={()=>setSpots(Array(n).fill(null).map((_,i)=>spots[i]||{hint:'',hasPhoto:false}))} style={{
+                      flex:1, height:48, borderRadius:9, border:`1px solid ${spots.length===n?C.accent:C.border}`,
+                      background:spots.length===n ? C.accentSoft : C.bg, color:spots.length===n ? C.accent : C.textMuted,
+                      fontWeight:700, fontSize:'.82rem', cursor:'pointer',
+                      transition:'background .15s, border-color .15s',
+                    }}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              {lbl('Neighbourhood')}
+              {inp(area, setArea, 'e.g. Central Park')}
+            </div>
+            {/* Visual preview card */}
+            <div style={{ borderRadius:14, overflow:'hidden', border:`1px solid color-mix(in srgb, ${C.border} 92%, ${C.accentSoft})`, background:C.surface, boxShadow:C.shadowMd, marginTop:'.25rem' }}>
+              <div style={{ display:'flex', alignItems:'center', minHeight:'6rem' }}>
+                <div style={{ width:'6rem', height:'6rem', flexShrink:0, background:`linear-gradient(135deg, ${C.surface2}, color-mix(in srgb, ${C.accent} 22%, ${C.surface2}))`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.border} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 13h4"/></svg>
+                </div>
+                <div style={{ padding:'.75rem 1rem' }}>
+                  <span style={{ fontSize:'.65rem', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'.2rem .45rem', borderRadius:4, background:C.accentSoft, color:C.accent }}>{area||'NYC'}</span>
+                  <p style={{ margin:'.3rem 0 .2rem', fontFamily:'"Cormorant Garamond", serif', fontSize:'1.1rem', fontWeight:600, color:title?C.text:C.border, lineHeight:1.2 }}>{title||'Hunt title'}</p>
+                  <p style={{ margin:0, fontSize:'.82rem', color:C.textMuted }}>{spots.length} checkpoints · {timeLimit||'?'} min</p>
+                </div>
+              </div>
+            </div>
+            <button onClick={()=>setStep(1)} style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:52, width:'100%', borderRadius:10, background:C.accent, border:'none', color:'#fffcf5', fontFamily:'"DM Sans", sans-serif', fontSize:'1rem', fontWeight:600, cursor:'pointer', boxShadow:`0 4px 14px color-mix(in srgb, ${C.accent} 32%, transparent)` }}>Continue → Add checkpoints</button>
+          </div>
+        )}
+
+        {/* Step 1 — Checkpoints */}
+        {step === 1 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'.85rem' }}>
+            {spots.map((s, i) => (
+              <div key={i} style={{ borderRadius:14, border:`1px solid ${s.hint?C.accent:C.border}`, background:C.surface, overflow:'hidden', transition:'border-color .2s', boxShadow:C.shadow }}>
+                {/* Number header */}
+                <div style={{ display:'flex', alignItems:'center', gap:'.65rem', padding:'.7rem 1rem', borderBottom:`1px solid ${C.border}`, background:C.surface2 }}>
+                  <div style={{ width:24, height:24, borderRadius:'50%', background:s.hint?C.accent:C.border, color:'#fffcf5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.72rem', fontWeight:700, flexShrink:0 }}>{i+1}</div>
+                  <span style={{ fontSize:'.78rem', fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase', color:C.textMuted }}>Checkpoint {i+1}</span>
+                </div>
+                <div style={{ padding:'.75rem 1rem', display:'flex', flexDirection:'column', gap:'.65rem' }}>
+                  <input
+                    value={s.hint}
+                    onChange={e=>setSpots(spots.map((sp,j)=>j===i?{...sp,hint:e.target.value}:sp))}
+                    placeholder="What should the player photograph?"
+                    style={{ width:'100%', minHeight:44, padding:'.5rem .75rem', borderRadius:9, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontFamily:'"DM Sans", sans-serif', fontSize:'.92rem', boxSizing:'border-box', outline:'none' }}
+                  />
+                  <button
+                    onClick={()=>setSpots(spots.map((sp,j)=>j===i?{...sp,hasPhoto:!sp.hasPhoto}:sp))}
+                    style={{ display:'flex', alignItems:'center', gap:'.6rem', padding:'.55rem .85rem', borderRadius:9, border:`1px solid ${s.hasPhoto?C.accent:C.border}`, background:s.hasPhoto?C.accentSoft:C.bg, color:s.hasPhoto?C.accent:C.textMuted, fontSize:'.82rem', fontWeight:600, cursor:'pointer', width:'100%' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="8" width="18" height="14" rx="2"/><path d="M15 8V6a3 3 0 0 0-6 0v2"/><circle cx="12" cy="15" r="2"/></svg>
+                    {s.hasPhoto ? 'Photo added ✓' : 'Add reference photo'}
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:'.65rem', marginTop:'.25rem' }}>
+              <button onClick={()=>setStep(0)} style={{ flex:1, minHeight:48, borderRadius:10, border:`1px solid ${C.border}`, background:'transparent', color:C.textMuted, fontSize:'.875rem', fontWeight:600, cursor:'pointer' }}>← Back</button>
+              <button onClick={()=>setStep(2)} style={{ flex:2, minHeight:48, borderRadius:10, background:C.accent, border:'none', color:'#fffcf5', fontSize:'.875rem', fontWeight:600, cursor:'pointer', boxShadow:`0 4px 14px color-mix(in srgb, ${C.accent} 32%, transparent)` }}>Preview & publish</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2 — Preview */}
+        {step === 2 && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:'1.15rem 1.25rem', boxShadow:C.shadowMd }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'.75rem' }}>
+                <span style={{ fontSize:'.65rem', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'.25rem .5rem', borderRadius:4, background:C.accentSoft, color:C.accent }}>{area||'NYC'}</span>
+              </div>
+              <h2 style={{ fontFamily:'"Cormorant Garamond", serif', fontWeight:600, fontSize:'1.45rem', margin:'0 0 .3rem', color:C.text }}>{title||'My Hunt'}</h2>
+              <p style={{ margin:'0 0 1rem', fontSize:'.88rem', color:C.textMuted }}>{spots.length} checkpoints · {timeLimit} min</p>
+              {spots.map((s,i) => (
+                <div key={i} style={{ display:'flex', gap:'.65rem', alignItems:'flex-start', padding:'.65rem 0', borderTop:`1px solid ${C.border}` }}>
+                  <div style={{ width:20, height:20, borderRadius:'50%', background:C.accentSoft, color:C.accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'.65rem', fontWeight:700, flexShrink:0, marginTop:2 }}>{i+1}</div>
+                  <p style={{ margin:0, fontSize:'.88rem', color:s.hint?C.text:C.textMuted, fontStyle:s.hint?'normal':'italic' }}>{s.hint||'No hint added'}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: dark?'rgba(122,171,132,.18)':'rgba(74,107,79,.15)', borderRadius:10, padding:'.85rem 1rem', border:`1px solid ${dark?'rgba(122,171,132,.35)':'rgba(74,107,79,.35)'}`, fontSize:'.88rem', color:C.text }}>
+              Your hunt will be visible to all players immediately after publishing.
+            </div>
+            <div style={{ display:'flex', gap:'.65rem' }}>
+              <button onClick={()=>setStep(1)} style={{ flex:1, minHeight:48, borderRadius:10, border:`1px solid ${C.border}`, background:'transparent', color:C.textMuted, fontSize:'.875rem', fontWeight:600, cursor:'pointer' }}>← Edit</button>
+              <button style={{ flex:2, minHeight:48, borderRadius:10, background:C.accent, border:'none', color:'#fffcf5', fontSize:'.875rem', fontWeight:700, cursor:'pointer', letterSpacing:'.02em', boxShadow:`0 4px 14px color-mix(in srgb, ${C.accent} 35%, transparent)` }}>Publish hunt</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SavedPage({ dark, favorites, hunts, onToggleFavorite, onNav }) {
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+  const savedHunts = hunts.filter(h => favorites.has(h.id));
+  return (
+    <div>
+      <HeroSection
+        eyebrow="Collection"
+        title="Saved hunts"
+        lead="Hunts you&rsquo;ve bookmarked for later."
+        dark={dark}
+      />
+      <div style={{ padding: '0 0 .45rem .45rem', marginBottom: '.85rem' }}>
+        <SectionTitle dark={dark}>{savedHunts.length} saved</SectionTitle>
+      </div>
+      {savedHunts.length === 0 ? (
+        <div style={{
+          textAlign: 'center', color: C.textMuted, padding: '2.5rem 1.25rem',
+          fontSize: '.95rem', background: C.surface,
+          border: `1px dashed ${C.border}`, borderRadius: 16,
+        }}>
+          <p style={{ margin: 0 }}>No saved hunts yet.</p>
+          <p style={{ margin: '.35rem 0 0', fontSize: '.85rem' }}>Tap the heart on any hunt to save it here.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.65rem' }}>
+          {savedHunts.map(h => (
+            <div key={h.id} style={{ position: 'relative' }}>
+              <HuntRow
+                title={h.title} meta={h.meta} areaLabel={h.area}
+                thumbGradient={h.thumbGradient} dark={dark}
+                favorited={favorites.has(h.id)}
+                onFavorite={() => onToggleFavorite(h.id)}
+                onClick={() => onNav('challenge', h)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LeaderboardPage({ dark }) {
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+  const podiumColors = [
+    { medal:'🥇', bg: dark?'rgba(196,165,116,.2)':'rgba(184,149,106,.15)', border: dark?'rgba(196,165,116,.45)':'rgba(184,149,106,.4)', color: dark?'#c4a574':'#7a5c45' },
+    { medal:'🥈', bg: dark?'rgba(176,154,134,.14)':'rgba(176,154,134,.12)', border: dark?'rgba(176,154,134,.35)':'rgba(176,154,134,.3)', color: dark?'#b09a86':'#6b5544' },
+    { medal:'🥉', bg: dark?'rgba(160,120,80,.14)':'rgba(160,120,80,.1)',   border: dark?'rgba(160,120,80,.35)':'rgba(160,120,80,.28)',  color: dark?'#c08850':'#8c6030' },
+  ];
+  const YOU = { rank:12, merits:420, name:'you' };
+
+  return (
+    <div style={{ paddingBottom:'7rem' }}>
+      {/* Hero */}
+      <div style={{ padding:'clamp(.55rem,2.2dvh,1rem) 1rem clamp(.45rem,1.4dvh,.85rem)', borderBottom:`1px solid color-mix(in srgb, ${C.border} 85%, ${C.accentSoft})`, marginBottom:'1.25rem' }}>
+        <p style={{ margin:'0 0 .5rem .45rem', fontSize:'.72rem', fontWeight:700, letterSpacing:'.2em', textTransform:'uppercase', color:C.accent }}>Rankings</p>
+        <h1 style={{ margin:'0 0 0 .45rem', fontFamily:'"Cormorant Garamond", serif', fontSize:'clamp(2.2rem,11vw,2.75rem)', fontWeight:600, lineHeight:1.06, letterSpacing:'-.03em', color:C.text }}>Leaderboard</h1>
+      </div>
+
+      <div style={{ padding:'0 1rem', display:'flex', flexDirection:'column', gap:'1rem' }}>
+
+        {/* Your rank card */}
+        <div style={{ display:'flex', alignItems:'center', gap:'.85rem', padding:'.85rem 1rem', borderRadius:14, background:C.accentSoft, border:`1px solid color-mix(in srgb, ${C.accent} 28%, transparent)` }}>
+          <div style={{ width:36, height:36, borderRadius:999, overflow:'hidden', background:C.bgWarm, border:`2px solid ${C.accent}`, flexShrink:0 }}>
+            <img src="/assets/avatars/Avatar_Default_Male_1.webp" alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          </div>
+          <div style={{ flex:1 }}>
+            <p style={{ margin:0, fontSize:'.72rem', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:C.accent }}>Your rank</p>
+            <p style={{ margin:'2px 0 0', fontSize:'.9rem', color:C.text }}>#{YOU.rank} globally · {YOU.merits} merits</p>
+          </div>
+          <div style={{ fontFamily:'"Cormorant Garamond", serif', fontSize:'2rem', fontWeight:600, color:C.accent, lineHeight:1 }}>{YOU.rank}</div>
+        </div>
+
+        {/* Top 3 podium */}
+        <div>
+          <p style={{ margin:'0 0 .75rem .1rem', fontSize:'.72rem', fontWeight:700, letterSpacing:'.12em', textTransform:'uppercase', color:C.textMuted }}>Top players</p>
+          <div style={{ display:'flex', gap:'.65rem' }}>
+            {LEADERBOARD.slice(0,3).map((p, i) => {
+              const pc = podiumColors[i];
+              const heights = ['88px', '72px', '60px'];
+              return (
+                <div key={p.rank} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'.5rem' }}>
+                  {/* Avatar */}
+                  <div style={{ width:48, height:48, borderRadius:999, overflow:'hidden', border:`2px solid ${pc.color}`, background:C.bgWarm, boxShadow:`0 0 0 3px ${pc.bg}` }}>
+                    <img src={`/assets/avatars/Avatar_Default_${p.avatar}.webp`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                  </div>
+                  <p style={{ margin:0, fontSize:'.72rem', fontWeight:600, color:C.text, textAlign:'center', lineHeight:1.2, maxWidth:72, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</p>
+                  <p style={{ margin:0, fontSize:'.68rem', fontWeight:700, color:pc.color }}>{p.merits.toLocaleString()} pts</p>
+                  {/* Podium block */}
+                  <div style={{ width:'100%', height:heights[i], borderRadius:'8px 8px 0 0', background:pc.bg, border:`1px solid ${pc.border}`, borderBottom:'none', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.3rem' }}>
+                    {pc.medal}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Podium base */}
+          <div style={{ height:6, background:`linear-gradient(90deg, ${C.surface2}, ${C.border}, ${C.surface2})`, borderRadius:'0 0 8px 8px' }} />
+        </div>
+
+        {/* Full list */}
+        <div>
+          <p style={{ margin:'0 0 .65rem .1rem', fontSize:'.72rem', fontWeight:700, letterSpacing:'.12em', textTransform:'uppercase', color:C.textMuted }}>All rankings</p>
+          <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', boxShadow:C.shadowMd }}>
+            {LEADERBOARD.map((p, i) => (
+              <div key={p.rank} style={{ display:'flex', alignItems:'center', gap:'.85rem', padding:'.75rem 1rem', borderBottom:i<LEADERBOARD.length-1?`1px solid ${C.border}`:'none', background: i<3 ? `color-mix(in srgb, ${podiumColors[i].bg} 60%, transparent)` : 'transparent' }}>
+                <span style={{ fontFamily:'"Cormorant Garamond", serif', fontWeight:600, fontSize:'1.2rem', color: i<3 ? podiumColors[i].color : C.textMuted, minWidth:22, textAlign:'center' }}>{p.rank}</span>
+                <div style={{ width:34, height:34, borderRadius:999, overflow:'hidden', background:C.bgWarm, border:`1px solid ${C.border}`, flexShrink:0 }}>
+                  <img src={`/assets/avatars/Avatar_Default_${p.avatar}.webp`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                </div>
+                <span style={{ flex:1, fontSize:'.9rem', color:C.text, fontWeight:500 }}>{p.name}</span>
+                <span style={{ fontSize:'.82rem', fontWeight:700, color: i<3 ? podiumColors[i].color : C.textMuted }}>{p.merits.toLocaleString()}</span>
+              </div>
+            ))}
+            {/* Ellipsis + your row */}
+            <div style={{ padding:'.5rem 1rem', borderTop:`1px solid ${C.border}`, textAlign:'center' }}>
+              <span style={{ fontSize:'.78rem', color:C.textMuted, letterSpacing:'.06em' }}>· · ·</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:'.85rem', padding:'.75rem 1rem', background:C.accentSoft, borderTop:`1px solid color-mix(in srgb, ${C.accent} 20%, ${C.border})` }}>
+              <span style={{ fontFamily:'"Cormorant Garamond", serif', fontWeight:600, fontSize:'1.2rem', color:C.accent, minWidth:22, textAlign:'center' }}>12</span>
+              <div style={{ width:34, height:34, borderRadius:999, overflow:'hidden', background:C.bgWarm, border:`2px solid ${C.accent}`, flexShrink:0 }}>
+                <img src="/assets/avatars/Avatar_Default_Male_1.webp" alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+              </div>
+              <span style={{ flex:1, fontSize:'.9rem', color:C.text, fontWeight:600 }}>you</span>
+              <span style={{ fontSize:'.82rem', fontWeight:700, color:C.accent }}>420</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main app ─────────────────────────────────────────────────
+
+function App() {
+  const saved = JSON.parse(localStorage.getItem('tg-kit-state') || '{}');
+
+  // themeMode: 'light' | 'dark' | 'system'
+  const [themeMode, setThemeModeRaw] = React.useState(saved.themeMode || (TWEAK_DEFAULTS.theme === 'dark' ? 'dark' : 'light'));
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark = themeMode === 'dark' || (themeMode === 'system' && systemDark);
+
+  function setThemeMode(mode) {
+    setThemeModeRaw(mode);
+  }
+
+  const [screen, setScreen] = React.useState(TWEAK_DEFAULTS.startScreen || 'home');
+  const [selectedHunt, setSelectedHunt] = React.useState(null);
+  const [favorites, setFavorites] = React.useState(new Set(saved.favs || []));
+  const [runStarted, setRunStarted] = React.useState(false);
+  const [timeLeft, setTimeLeft] = React.useState(30 * 60 * 1000);
+  const [completed, setCompleted] = React.useState([0, 2]);
+  const [avatar, setAvatar] = React.useState(saved.avatar || 'Male_1');
+  const timerRef = React.useRef(null);
+
+  const C = dark ? COLORS_DARK : COLORS_LIGHT;
+
+  React.useEffect(() => {
+    localStorage.setItem('tg-kit-state', JSON.stringify({ themeMode, favs: [...favorites], avatar }));
+  }, [dark, screen, favorites, avatar]);
+
+  function startRun() {
+    setRunStarted(true);
+    setTimeLeft(30 * 60 * 1000);
+    setCompleted([0, 2]);
+    setScreen('run');
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => Math.max(0, t - 1000));
+    }, 1000);
+  }
+
+  React.useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
+
+  function nav(page, data) {
+    if (page === 'challenge' && data) setSelectedHunt(data);
+    setScreen(page);
+  }
+
+  function toggleFavorite(id) {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  const bgStyle = {
+    background: `radial-gradient(100% 55% at 50% -5%, color-mix(in srgb, ${C.accentSoft} 65%, transparent), transparent 52%), radial-gradient(90% 40% at 0% 100%, ${C.accentSoft}, transparent 45%), ${C.bg}`,
+    color: C.text,
+    fontFamily: '"DM Sans", sans-serif',
+    WebkitFontSmoothing: 'antialiased',
+  };
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'home': return <HomePage dark={dark} onNav={nav} favorites={favorites} onToggleFavorite={toggleFavorite} />;
+      case 'challenge': return <ChallengePage hunt={selectedHunt || SAMPLE_HUNT} dark={dark} onStart={startRun} onBack={() => setScreen('home')} />;
+      case 'run': return <RunPage hunt={selectedHunt || SAMPLE_HUNT} dark={dark} timeLeft={timeLeft} pct={(timeLeft / (30*60*1000)) * 100} completedIndices={completed} />;
+      case 'saved': return <SavedPage dark={dark} favorites={favorites} hunts={HUNTS} onToggleFavorite={toggleFavorite} onNav={nav} />;
+      case 'profile': return <ProfilePage dark={dark} themeMode={themeMode} onSetTheme={setThemeMode} selectedAvatar={avatar} onSelectAvatar={setAvatar} merits={420} />;
+      case 'create': return <CreatePage dark={dark} />;
+      case 'leaderboard': return <LeaderboardPage dark={dark} />;
+      default: return null;
+    }
+  };
+
+  const screenToTab = { home:'hunts', challenge:'hunts', run:'hunts', saved:'saved', create:'create', leaderboard:'rank', profile:'profile' };
+  return (
+    <div style={{ width:'100%', height:'100%', ...bgStyle, display:'flex', flexDirection:'column', position:'relative' }}>
+      {/* Status bar spacer */}
+      <div style={{ height:50, flexShrink:0 }} />
+      {/* Header */}
+      <AppHeader dark={dark} onToggleTheme={() => setThemeMode(dark ? 'light' : 'dark')} meritPoints={420} />
+      {/* Scrollable content */}
+      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding:'1rem 1rem 0' }}>
+        <div style={{ animation:'pageEnter .38s cubic-bezier(.25,.1,.25,1) both' }}>
+          {renderScreen()}
+        </div>
+      </div>
+      {/* Dock */}
+      <Dock active={screenToTab[screen]} onNav={(k) => { if(k==='hunts') nav('home'); else nav(k); }} dark={dark} />
+      <style>{`
+        @keyframes pageEnter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+        ::-webkit-scrollbar { display:none; }
+      `}</style>
+    </div>
+  );
+}
+
+// Tweaks
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode') document.getElementById('tweaks-panel').style.display = 'block';
+  if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaks-panel').style.display = 'none';
+});
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+document.getElementById('tweak-theme').addEventListener('change', e => {
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: e.target.value } }, '*');
+  location.reload();
+});
+document.getElementById('tweak-screen').addEventListener('change', e => {
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { startScreen: e.target.value } }, '*');
+  localStorage.removeItem('tg-kit-state');
+  location.reload();
+});
+
+const root = ReactDOM.createRoot(document.getElementById('phone-root'));
+root.render(<App />);
+</script>
+</body>
+</html>

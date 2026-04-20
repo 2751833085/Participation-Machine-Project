@@ -6,6 +6,8 @@
 import { auth } from "../firebase-init.js";
 import { renderShell } from "../components/shell.js";
 import { escapeHtml } from "../lib/utils.js";
+import { nav } from "../lib/router.js";
+import { setGuestSession } from "../lib/state.js";
 import {
   afterAuthSuccess,
   consumeAuthRedirectError,
@@ -283,6 +285,8 @@ export function render() {
                   <div id="login-status" class="welcome-signin-final-status"></div>
                   <div class="welcome-signin-final-panel card">
                     <button type="button" class="btn btn-primary btn-block" id="btn-google">Continue with Google</button>
+                    <button type="button" class="btn btn-secondary btn-block" id="btn-guest">Continue as guest</button>
+                    <p class="card-meta" style="margin-top:0.75rem;text-align:center;">Guests can browse hunts and the map. Sign in with Google to start a run, create hunts, or view the photo review feed.</p>
                     <p class="auth-legal"><a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
                     · <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a></p>
                   </div>
@@ -316,11 +320,17 @@ export function render() {
 
   const statusEl = document.getElementById("login-status");
   const btn = document.getElementById("btn-google");
+  const btnGuest = document.getElementById("btn-guest");
 
   const redirectErr = consumeAuthRedirectError();
   if (redirectErr && statusEl) {
     statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(redirectErr))}</div>`;
   }
+
+  btnGuest?.addEventListener("click", () => {
+    setGuestSession(true);
+    nav("#/");
+  });
 
   btn.addEventListener("click", async () => {
     statusEl.innerHTML = "";

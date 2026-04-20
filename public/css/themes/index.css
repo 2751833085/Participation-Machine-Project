@@ -1,0 +1,8 @@
+/*
+ * Visual theme bundle index.
+ *
+ * Only Classical is active for now.
+ * Material Design (Beta) gets enabled once its styles are implemented.
+ */
+
+@import url("./classical.css");

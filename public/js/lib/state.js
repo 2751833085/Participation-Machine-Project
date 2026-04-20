@@ -1,11 +1,34 @@
 /**
- * Shared app-level state: theme management and auth-return navigation.
+ * Shared app-level state: color-scheme preference + auth-return navigation.
  */
 
 const THEME_STORAGE_KEY = "tm-theme";
 const AUTH_RETURN_KEY = "tm-auth-return";
+/** Session-only: browse without Google sign-in (testing / preview). Cleared on real sign-in. */
+const GUEST_SESSION_KEY = "tm-guest-session";
 
-/** Resolved visual theme for tiles/CSS (always "light" or "dark"). */
+export function isGuestSession() {
+  try {
+    return sessionStorage.getItem(GUEST_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setGuestSession(on) {
+  try {
+    if (on) sessionStorage.setItem(GUEST_SESSION_KEY, "1");
+    else sessionStorage.removeItem(GUEST_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearGuestSession() {
+  setGuestSession(false);
+}
+
+/** Resolved color scheme for tokens/CSS (always "light" or "dark"). */
 export function effectiveTheme() {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === "light" || stored === "dark") return stored;

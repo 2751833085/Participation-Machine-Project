@@ -7,6 +7,8 @@ import { GEO_RESTRICT_MANHATTAN } from "../lib/geo-flags.js";
 import { compressCheckpointImage } from "../image-utils.js";
 import {
   collection,
+  deleteDoc,
+  deleteField,
   doc,
   getDoc,
   limit,
@@ -15,8 +17,11 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
+  where,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 import {
+  deleteObject,
   getDownloadURL,
   ref,
   uploadBytes,
@@ -98,7 +103,148 @@ export function watchChallenges(limitN, callback, onError) {
 
 export async function getChallenge(id) {
   const snap = await getDoc(doc(db, "challenges", id));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return snap.exists() ? { ...snap.data(), id: snap.id } : null;
+}
+
+function sortChallengeDocsNewestFirst(docs) {
+  return [...docs].sort((a, b) => {
+    const ta = a.data().createdAt?.toMillis?.() ?? 0;
+    const tb = b.data().createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
+  });
+}
+
+/**
+ * Signed-in creator’s hunts (newest first).
+ * Uses createdBy + createdAt index when available; falls back to equality-only query + client sort if the index is missing.
+ */
+export function watchUserPublishedChallenges(uid, onNext, onError) {
+  if (!uid) return () => {};
+
+  let unsub = null;
+  let cancelled = false;
+
+  const orderedQ = query(
+    collection(db, "challenges"),
+    where("createdBy", "==", uid),
+    orderBy("createdAt", "desc"),
+    limit(50),
+  );
+
+  const fallbackQ = query(
+    collection(db, "challenges"),
+    where("createdBy", "==", uid),
+    limit(50),
+  );
+
+  function attachFallback() {
+    unsub = onSnapshot(
+      fallbackQ,
+      (snap) => {
+        if (cancelled) return;
+        const sorted = sortChallengeDocsNewestFirst(snap.docs).slice(0, 50);
+        onNext({ docs: sorted });
+      },
+      (err) => onError(err),
+    );
+  }
+
+  unsub = onSnapshot(
+    orderedQ,
+    (snap) => {
+      if (cancelled) return;
+      onNext(snap);
+    },
+    (err) => {
+      console.warn("[challenges] watchUserPublishedChallenges ordered query", err);
+      if (cancelled) return;
+      const code = err?.code || "";
+      const msg = String(err?.message || "");
+      const indexMissing =
+        code === "failed-precondition" ||
+        msg.includes("index") ||
+        msg.includes("requires an index");
+      if (!indexMissing) {
+        onError(err);
+        return;
+      }
+      if (unsub) {
+        unsub();
+        unsub = null;
+      }
+      attachFallback();
+    },
+  );
+
+  return () => {
+    cancelled = true;
+    if (unsub) {
+      unsub();
+      unsub = null;
+    }
+  };
+}
+
+export async function deleteUserChallenge(challengeId) {
+  if (!auth.currentUser) throw new Error("Sign in to manage hunts.");
+  const challengeRef = doc(db, "challenges", challengeId);
+  const snap = await getDoc(challengeRef);
+  if (!snap.exists()) throw new Error("Hunt not found.");
+  const data = snap.data();
+  if (data.createdBy !== auth.currentUser.uid) {
+    throw new Error("You can only delete your own hunts.");
+  }
+  const spots = Array.isArray(data.spots) ? data.spots : [];
+  for (let i = 0; i < spots.length; i += 1) {
+    try {
+      await deleteObject(ref(storage, `challenges/${challengeId}/${i}.jpg`));
+    } catch {
+      /* missing or already removed */
+    }
+  }
+  await deleteDoc(challengeRef);
+}
+
+/**
+ * Update text / timing fields only (checkpoints and map pin unchanged).
+ * @param {string} challengeId
+ * @param {{ title: string, areaLabel: string, timeLimitMinutes: number, huntHint?: string }} patch
+ */
+export async function updateUserChallengeDetails(challengeId, patch) {
+  if (!auth.currentUser) throw new Error("Sign in to manage hunts.");
+  const challengeRef = doc(db, "challenges", challengeId);
+  const snap = await getDoc(challengeRef);
+  if (!snap.exists()) throw new Error("Hunt not found.");
+  const data = snap.data();
+  if (data.createdBy !== auth.currentUser.uid) {
+    throw new Error("You can only edit your own hunts.");
+  }
+  const title = typeof patch.title === "string" ? patch.title.trim() : "";
+  if (!title) throw new Error("Title is required.");
+  const areaLabel =
+    typeof patch.areaLabel === "string" ? patch.areaLabel.trim() : "";
+  if (!areaLabel) throw new Error("Area / neighborhood is required.");
+  const minutes = Number(patch.timeLimitMinutes);
+  if (
+    !Number.isInteger(minutes) ||
+    minutes < 1 ||
+    minutes > 24 * 60
+  ) {
+    throw new Error("Time limit must be between 1 and 1440 minutes.");
+  }
+  const rawHint =
+    typeof patch.huntHint === "string" ? patch.huntHint.trim() : "";
+  const updates = {
+    title,
+    areaLabel,
+    timeLimitMinutes: minutes,
+  };
+  if (rawHint) {
+    updates.huntHint = rawHint.slice(0, 800);
+  } else {
+    updates.huntHint = deleteField();
+  }
+  await updateDoc(challengeRef, updates);
 }
 
 /* ── Create challenge with image upload ── */

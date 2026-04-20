@@ -10,6 +10,8 @@ import {
 import { renderShell } from "../components/shell.js";
 import { escapeHtml } from "../lib/utils.js";
 import { saveAuthReturn } from "../lib/state.js";
+import { startHuntWithGeoCheck } from "../lib/start-hunt-flow.js";
+import { userHasWonChallenge } from "../services/attempts.js";
 import { getChallenge } from "../services/challenges.js";
 import {
   aggregateVoteCounts,
@@ -20,6 +22,9 @@ import * as loginPage from "./login.js";
 
 let photosUnsub = null;
 const photoCardCleanups = [];
+let huntReviewRunBtn = null;
+let huntReviewRunHandler = null;
+let huntReviewChallengeForRun = null;
 
 function teardownPhotoCards() {
   while (photoCardCleanups.length) {
@@ -37,6 +42,15 @@ function stopPhotosWatch() {
     photosUnsub();
     photosUnsub = null;
   }
+}
+
+function unwireHuntReviewRun() {
+  if (huntReviewRunBtn && huntReviewRunHandler) {
+    huntReviewRunBtn.removeEventListener("click", huntReviewRunHandler);
+  }
+  huntReviewRunBtn = null;
+  huntReviewRunHandler = null;
+  huntReviewChallengeForRun = null;
 }
 
 function photoMillis(p) {
@@ -249,6 +263,12 @@ export async function render(challengeId) {
       <a href="${escapeHtml(backHref)}" class="back-link" id="hunt-review-back">← ${escapeHtml(title)}</a>
       <h1 class="h1" style="margin-top:0.5rem;">Photos from this hunt</h1>
       <div id="hunt-review-official" class="hunt-review-official-host"></div>
+      <div id="hunt-review-run-pack" class="hunt-review-run-pack" hidden>
+        <div class="card hunt-review-run-card">
+          <button type="button" class="btn btn-primary btn-block" id="hunt-review-run-btn"></button>
+          <div id="hunt-review-run-status" class="hunt-review-run-status"></div>
+        </div>
+      </div>
       <p class="card-meta hunt-review-lead">Below: checkpoint photos from your runs, then other players (visible after you submit at least one run photo).</p>
       <div id="hunt-review-body"><p class="card-meta">Loading…</p></div>
     `,
@@ -258,6 +278,53 @@ export async function render(challengeId) {
     const officialHost = document.getElementById("hunt-review-official");
     if (officialHost) {
       officialHost.innerHTML = buildOfficialListingHtml(c);
+    }
+
+    unwireHuntReviewRun();
+    const pack = document.getElementById("hunt-review-run-pack");
+    const runBtn = document.getElementById("hunt-review-run-btn");
+    const runStatus = document.getElementById("hunt-review-run-status");
+    let hasWon = false;
+    try {
+      hasWon = await userHasWonChallenge(uid, challengeId);
+    } catch {
+      hasWon = false;
+    }
+    const isCreator = (c.createdBy || "") === uid;
+    if (runBtn && pack) {
+      if (hasWon) {
+        pack.hidden = false;
+        runBtn.textContent = "Restart hunt";
+        huntReviewChallengeForRun = c;
+        huntReviewRunBtn = runBtn;
+        huntReviewRunHandler = () => {
+          void startHuntWithGeoCheck({
+            challenge: huntReviewChallengeForRun,
+            challengeId,
+            statusEl: runStatus,
+            buttonEl: runBtn,
+            loginReturnHash: `#/hunt-review/${challengeId}`,
+            confirmRepeatWin: true,
+          });
+        };
+        runBtn.addEventListener("click", huntReviewRunHandler);
+      } else if (isCreator) {
+        pack.hidden = false;
+        runBtn.textContent = "Start your own hunt";
+        huntReviewChallengeForRun = c;
+        huntReviewRunBtn = runBtn;
+        huntReviewRunHandler = () => {
+          void startHuntWithGeoCheck({
+            challenge: huntReviewChallengeForRun,
+            challengeId,
+            statusEl: runStatus,
+            buttonEl: runBtn,
+            loginReturnHash: `#/hunt-review/${challengeId}`,
+            confirmRepeatWin: false,
+          });
+        };
+        runBtn.addEventListener("click", huntReviewRunHandler);
+      }
     }
 
     stopPhotosWatch();
@@ -283,6 +350,7 @@ export async function render(challengeId) {
 }
 
 export function cleanup() {
+  unwireHuntReviewRun();
   teardownPhotoCards();
   stopPhotosWatch();
 }

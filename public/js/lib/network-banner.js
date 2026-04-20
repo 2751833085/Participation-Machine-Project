@@ -1,11 +1,11 @@
 /**
- * Top offline banner: navigator onLine/offline + fetch probe + Reconnect.
+ * Top offline banner: navigator onLine/offline + fetch probe.
+ * Reconnect reloads the page so the SPA and Firestore listeners cold-start cleanly.
  */
 
 const PROBE_MS = 8000;
 
-let listenersInstalled = false;
-let reconnectBusy = false;
+let windowListenersInstalled = false;
 
 function bannerEl() {
   return document.getElementById("network-offline-banner");
@@ -54,44 +54,30 @@ function onBrowserOffline() {
   setOfflineBannerVisible(true);
 }
 
-async function onReconnectClick() {
-  if (reconnectBusy) return;
-  const btn = reconnectBtn();
-  reconnectBusy = true;
-  if (btn) btn.disabled = true;
-  try {
-    const ok = await probeConnectivity();
-    setOfflineBannerVisible(!ok);
-  } finally {
-    reconnectBusy = false;
-    if (btn) btn.disabled = false;
-  }
-}
-
-function installListenersOnce() {
-  if (listenersInstalled) return;
-  listenersInstalled = true;
+function installWindowListenersOnce() {
+  if (windowListenersInstalled) return;
+  windowListenersInstalled = true;
   window.addEventListener("online", () => void onBrowserOnline());
   window.addEventListener("offline", () => onBrowserOffline());
-  document.addEventListener(
-    "click",
-    (e) => {
-      if (e.defaultPrevented || e.button !== 0) return;
-      const btn = e.target.closest("#network-reconnect-btn");
-      if (!btn) return;
-      e.preventDefault();
-      void onReconnectClick();
-    },
-    false,
-  );
 }
 
 /**
  * Call after each `renderShell` (banner node is recreated). Wires window listeners once.
- * Uses `navigator.onLine` only here so navigation stays cheap; `online` / Reconnect run a real fetch probe.
+ * Reconnect is bound on the fresh button each time — avoids relying on a single document delegate.
+ * Uses `navigator.onLine` only here so navigation stays cheap; `online` runs a fetch probe.
  */
 export function refreshNetworkBanner() {
-  installListenersOnce();
+  installWindowListenersOnce();
+
+  const btn = reconnectBtn();
+  if (btn) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      window.location.reload();
+    });
+  }
+
   if (!navigator.onLine) {
     requestAnimationFrame(() => setOfflineBannerVisible(true));
     return;

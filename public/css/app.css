@@ -1,19 +1,11 @@
 /*
  * Tourist Manhunt — master stylesheet
  *
- * Layers (load order matters):
- *   1. tokens      – CSS custom properties, theme colours
- *   2. base        – reset, typography, links
- *   3. components  – buttons, cards, forms, status, modals
- *   4. layout      – header, dock, footer, page grid helpers
- *   5. pages       – hero, hunt grid, map, auth, profile
+ * Theme entrypoint:
+ *   - themes/index.css decides which visual theme bundles are active.
+ *   - The current shipped bundle is "Classical" (existing Tourgo UI).
  *
  * To add styles for a new feature, create a new CSS file and @import it here.
  */
 
-@import url("tokens.css");
-@import url("base.css");
-@import url("components.css");
-@import url("layout.css");
-@import url("pages.css");
-@import url("portrait-gate.css");
+@import url("themes/index.css");

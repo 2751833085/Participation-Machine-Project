@@ -21,6 +21,16 @@ import {
 
 let unsubs = [];
 
+/** Labels for `challengeReports.category` (same ids as client report modal). */
+const CHALLENGE_REPORT_LABELS = {
+  spam_misleading: "Spam / misleading",
+  harassment: "Harassment / hate",
+  illegal: "Illegal / dangerous",
+  image_distressing: "Photos uncomfortable",
+  copyright: "Copyright / impersonation",
+  other: "Other",
+};
+
 function formatTs(ts) {
   if (!ts) return "—";
   try {
@@ -192,6 +202,18 @@ function renderDashboard() {
       <p class="admin-stats" id="admin-stats-line">Loading…</p>
     </div>
     <section class="admin-section">
+      <h2 class="admin-h2">Hunt reports (Open hunts)</h2>
+      <p class="admin-help">Submitted from the home feed \u26A0\uFE0E button. Reporter UID is the signed-in user who filed the report.</p>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="admin-tb-reports">
+          <thead><tr>
+            <th>Time</th><th>Hunt</th><th>Category</th><th>Details</th><th>Reporter UID</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="admin-section">
       <h2 class="admin-h2">Users</h2>
       <p class="admin-help">Delete removes Firestore profile, handle, attempts, run photos, and the Firebase Auth account.</p>
       <div class="admin-table-wrap">
@@ -250,13 +272,14 @@ function renderDashboard() {
   });
 
   const tbUsers = document.querySelector("#admin-tb-users tbody");
+  const tbReports = document.querySelector("#admin-tb-reports tbody");
   const tbCh = document.querySelector("#admin-tb-challenges tbody");
   const tbAt = document.querySelector("#admin-tb-attempts tbody");
   const statsEl = document.getElementById("admin-stats-line");
   const huntSelect = document.getElementById("admin-hunt-social-select");
   const socialRoot = document.getElementById("admin-social-root");
 
-  const state = { users: [], challenges: [], attempts: [] };
+  const state = { users: [], challenges: [], attempts: [], reports: [] };
 
   function refillHuntSelect() {
     if (!huntSelect) return;
@@ -372,7 +395,39 @@ function renderDashboard() {
     const active = state.attempts.filter((a) => a.status === "active").length;
     const won = state.attempts.filter((a) => a.status === "won").length;
     const lost = state.attempts.filter((a) => a.status === "lost").length;
-    statsEl.textContent = `${state.users.length} users · ${state.challenges.length} hunts (loaded) · ${state.attempts.length} recent attempts — active ${active} / won ${won} / lost ${lost}`;
+    statsEl.textContent = `${state.reports.length} hunt reports · ${state.users.length} users · ${state.challenges.length} hunts (loaded) · ${state.attempts.length} recent attempts — active ${active} / won ${won} / lost ${lost}`;
+  }
+
+  function paintReports() {
+    if (!tbReports) return;
+    if (!state.reports.length) {
+      tbReports.innerHTML =
+        '<tr><td colspan="5" class="admin-muted">No reports yet.</td></tr>';
+      paintStats();
+      return;
+    }
+    tbReports.innerHTML = state.reports
+      .map((row) => {
+        const r = row.data;
+        const cat = escapeHtml(
+          CHALLENGE_REPORT_LABELS[r.category] || r.category || "—",
+        );
+        const hid = escapeHtml(r.challengeId || "");
+        const title = escapeHtml(
+          String(r.challengeTitleSnapshot || "").slice(0, 80) || "—",
+        );
+        const details = escapeHtml(String(r.details || "").slice(0, 500));
+        const uid = escapeHtml(r.reporterUid || "—");
+        return `<tr>
+          <td>${escapeHtml(formatTs(r.createdAt))}</td>
+          <td class="admin-cell-clip"><a href="#/challenge/${hid}" class="admin-inline-link" target="_blank" rel="noopener noreferrer">${title}</a><br /><span class="admin-mono admin-muted">${hid}</span></td>
+          <td>${cat}</td>
+          <td class="admin-cell-clip" title="${details}">${details || "—"}</td>
+          <td class="admin-mono admin-cell-clip" title="${uid}">${uid}</td>
+        </tr>`;
+      })
+      .join("");
+    paintStats();
   }
 
   function userStatusRow(d) {
@@ -553,6 +608,29 @@ function renderDashboard() {
       if (aid) void onDeleteAttempt(aid);
     }
   });
+
+  unsubs.push(
+    onSnapshot(
+      query(
+        collection(db, "challengeReports"),
+        orderBy("createdAt", "desc"),
+        limit(100),
+      ),
+      (snap) => {
+        state.reports = snap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          data: docSnap.data(),
+        }));
+        paintReports();
+      },
+      () => {
+        if (tbReports) {
+          tbReports.innerHTML =
+            '<tr><td colspan="5">Could not load hunt reports (check Firestore index on <code>challengeReports.createdAt</code>).</td></tr>';
+        }
+      },
+    ),
+  );
 
   unsubs.push(
     onSnapshot(

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-app-build="modular-20260413y">
+<html lang="en" data-app-build="modular-20260419-topbar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,15 +9,20 @@
   <title>Tourgo</title>
   <script>
     (function () {
-      var k = "tm-theme";
-      var s = localStorage.getItem(k);
+      var colorKey = "tm-theme";
+      var uiThemeKey = "tm-ui-theme";
+      var s = localStorage.getItem(colorKey);
       var t =
         s === "light" || s === "dark"
           ? s
           : window.matchMedia("(prefers-color-scheme: dark)").matches
             ? "dark"
             : "light";
+      var uiTheme = localStorage.getItem(uiThemeKey) === "material-design"
+        ? "material-design"
+        : "classical";
       document.documentElement.dataset.theme = t;
+      document.documentElement.dataset.uiTheme = uiTheme;
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,11 +31,10 @@
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=1.9.4">
-  <link rel="stylesheet" href="css/app.css?v=20260413y">
+  <link rel="stylesheet" href="css/app.css?v=20260419-topbar">
 </head>
 <body>
   <script src="vendor/leaflet/leaflet.js?v=1.9.4"></script>
-  <script type="module" src="js/app.js?v=20260413y"></script>
+  <script type="module" src="js/app.js?v=20260419-topbar"></script>
 </body>
 </html>
-                                  

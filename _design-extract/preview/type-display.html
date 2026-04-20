@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Cormorant Garamond", serif; background: #f3ece2; padding: 18px 16px; color: #221e1a; }
+.row { padding: 6px 0; border-bottom: 1px solid #dcd3c4; display: flex; align-items: baseline; gap: 12px; }
+.row:last-child { border-bottom: none; }
+.meta { font-family: "DM Sans", sans-serif; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9a9288; min-width: 68px; flex-shrink: 0; padding-top: 2px; }
+.sample { line-height: 1.1; }
+.hero   { font-size: clamp(2.2rem,11vw,2.75rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.06; }
+.h1     { font-size: clamp(2.15rem,10.5vw,2.65rem); font-weight: 600; letter-spacing: -.025em; line-height: 1.12; }
+.h2     { font-size: clamp(1.42rem,5.5vw,1.72rem); font-weight: 600; }
+.modal  { font-size: clamp(1.45rem,5vw,1.75rem); font-weight: 600; }
+.card-h { font-size: 1.1rem; font-weight: 600; }
+.italic { font-style: italic; font-weight: 500; font-size: 1.05rem; color: #5e564c; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="row"><span class="meta">Hero</span><span class="sample hero">Good day.</span></div>
+  <div class="row"><span class="meta">H1</span><span class="sample h1">Open hunts</span></div>
+  <div class="row"><span class="meta">H2</span><span class="sample h2">Central Park Circuit</span></div>
+  <div class="row"><span class="meta">Modal</span><span class="sample modal">Start the hunt?</span></div>
+  <div class="row"><span class="meta">Card h</span><span class="sample card-h">SoHo Gallery Walk</span></div>
+  <div class="row"><span class="meta">Italic</span><span class="sample italic">Partly cloudy · 62°F</span></div>
+</body>
+</html>

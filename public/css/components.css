@@ -98,7 +98,7 @@
 
 .badge {
   align-self: flex-start;
-  font-size: 0.65rem;
+  font-size: var(--text-badge);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -319,11 +319,43 @@ body[data-modal-open] .leaflet-container {
   box-shadow: var(--shadow-lg);
 }
 
+/* Default dialogs (alert, report, …): sheet-style enter — no second route-level animation. */
+.modal-backdrop.modal-backdrop--sheet-enter {
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+.modal-backdrop.modal-backdrop--sheet-enter.is-visible {
+  opacity: 1;
+}
+
+.modal-dialog.modal-dialog--sheet-enter {
+  transform: translateY(14px);
+  opacity: 0;
+  transition:
+    transform 0.34s var(--ease-spring),
+    opacity 0.26s ease;
+}
+
+.modal-backdrop.modal-backdrop--sheet-enter.is-visible .modal-dialog.modal-dialog--sheet-enter {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop.modal-backdrop--sheet-enter,
+  .modal-dialog.modal-dialog--sheet-enter {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .modal-dialog-title {
   margin: 0 0 0.5rem;
   padding-left: var(--title-text-inset);
   font-family: var(--font-display);
-  font-size: clamp(1.45rem, 5vw, 1.75rem);
+  font-size: var(--text-modal-title);
   font-weight: 600;
   color: var(--text);
 }
@@ -513,6 +545,7 @@ body[data-modal-open] .leaflet-container {
   font-weight: 600;
   line-height: 1.38;
   color: var(--text);
+  font-variant-emoji: text;
 }
 
 .network-offline-banner__reconnect {

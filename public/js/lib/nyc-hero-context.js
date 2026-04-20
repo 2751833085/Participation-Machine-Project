@@ -25,47 +25,14 @@ export function getNYCHourNow() {
   return Number.isFinite(h) ? h : 12;
 }
 
-function stableIndex(hour, modulo) {
-  const d = new Date();
-  const day = d.getUTCDate();
-  return (day + hour) % modulo;
-}
-
 /**
- * Claude-ish one-line greeting from NYC clock.
+ * Short time-of-day greeting from NYC clock (English only; no rotating poetry).
  */
 export function buildPrimaryGreeting(hour) {
-  const i = stableIndex(hour, 3);
-  if (hour >= 5 && hour < 12) {
-    const m = [
-      "Good morning.",
-      "Morning — the city’s wide awake.",
-      "Rise and hunt. Good morning.",
-    ];
-    return m[i];
-  }
-  if (hour >= 12 && hour < 17) {
-    const m = [
-      "Good afternoon.",
-      "Afternoon light on the avenues.",
-      "Hey — afternoon hunt mode?",
-    ];
-    return m[i];
-  }
-  if (hour >= 17 && hour < 22) {
-    const m = [
-      "Good evening.",
-      "Evening in Manhattan.",
-      "Golden hour or streetlights — good evening.",
-    ];
-    return m[i];
-  }
-  const late = [
-    "Still up? NYC never sleeps.",
-    "Late-night hunt? Pace yourself out there.",
-    "This late and still chasing checkpoints?",
-  ];
-  return late[i];
+  if (hour >= 5 && hour < 12) return "Good morning!";
+  if (hour >= 12 && hour < 17) return "Good afternoon!";
+  if (hour >= 17 && hour < 22) return "Good evening!";
+  return "Good night!";
 }
 
 function formatNYCTimeClock() {
@@ -192,11 +159,24 @@ export function applyHomeHeroTitle() {
   titleEl.textContent = buildPrimaryGreeting(getNYCHourNow());
 }
 
-/** Eyebrow: weekday + date (NYC); °F + condition appended after Open-Meteo). */
+/** Eyebrow: weekday + date (NYC, uppercase) until weather fills in via `hydrateHomeHeroContext`. */
 export function applyHomeHeroEyebrowDateOnly() {
   const el = document.getElementById("hero-eyebrow");
   if (!el) return;
-  el.textContent = formatNYCWeekdayDate();
+  el.textContent = formatNYCWeekdayDate().toUpperCase();
+}
+
+function triggerHeroContextEnter(ctxEl) {
+  if (!ctxEl || ctxEl.hidden) return;
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+  ) {
+    return;
+  }
+  ctxEl.classList.remove("hero-context--enter");
+  void ctxEl.offsetWidth;
+  ctxEl.classList.add("hero-context--enter");
 }
 
 /** Shows time + short placeholder until Open-Meteo responds. */
@@ -205,10 +185,13 @@ export function applyHomeHeroContextPlaceholder() {
   if (!ctxEl) return;
   ctxEl.textContent = `${formatNYCTimeClock()} · NYC — checking the sky…`;
   ctxEl.hidden = false;
+  requestAnimationFrame(() => {
+    triggerHeroContextEnter(ctxEl);
+  });
 }
 
 /**
- * Fills #hero-eyebrow (date · °F · condition) and #hero-context after one Open-Meteo fetch.
+ * Fills `#hero-eyebrow` (DATE • °F • CONDITION) and `#hero-context` after one Open-Meteo fetch.
  */
 export async function hydrateHomeHeroContext() {
   const brow = document.getElementById("hero-eyebrow");
@@ -216,12 +199,13 @@ export async function hydrateHomeHeroContext() {
   const hour = getNYCHourNow();
   const wx = await fetchNYCWeather();
 
+  const dateCaps = formatNYCWeekdayDate().toUpperCase();
   if (brow) {
     if (wx && typeof wx.tempC === "number") {
       const f = Math.round(celsiusToF(wx.tempC));
-      brow.textContent = `${formatNYCWeekdayDate()} · ${f}°F · ${wx.shortLabel}`;
+      brow.textContent = `${dateCaps} • ${f}°F • ${wx.shortLabel.toUpperCase()}`;
     } else {
-      brow.textContent = `${formatNYCWeekdayDate()} · Weather unavailable`;
+      brow.textContent = `${dateCaps} • WEATHER UNAVAILABLE`;
     }
   }
 
@@ -241,4 +225,7 @@ export async function hydrateHomeHeroContext() {
 
   ctxEl.textContent = line;
   ctxEl.hidden = false;
+  requestAnimationFrame(() => {
+    triggerHeroContextEnter(ctxEl);
+  });
 }

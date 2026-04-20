@@ -17,11 +17,14 @@ export function parseRoute() {
 /**
  * Programmatic navigation. Always schedule a route flush: some browsers skip or defer
  * `hashchange`, so the URL can update while the UI stays on the old page.
+ * @param {string} to
+ * @param {{ force?: boolean }} [opts] — `force: true` re-renders when the hash is unchanged (same as `requestRoute(true)`).
  */
-export function nav(to) {
+export function nav(to, opts) {
+  const force = opts && opts.force === true;
   const h = to.startsWith("#") ? to : `#${to}`;
   if (location.hash !== h) {
     location.hash = h;
   }
-  requestRoute();
+  requestRoute(force);
 }

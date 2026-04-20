@@ -5,18 +5,18 @@
 import { auth } from "../firebase-init.js";
 import { renderShell } from "../components/shell.js";
 import { escapeHtml } from "../lib/utils.js";
-import { nav } from "../lib/router.js";
-import { effectiveTheme, saveAuthReturn } from "../lib/state.js";
-import {
-  assertWithinRadius,
-  getGeoPosition,
-  START_HUNT_MAX_DISTANCE_M,
-} from "../lib/geo-hunt-rules.js";
-import { createAttempt, userHasWonChallenge } from "../services/attempts.js";
+import { effectiveTheme } from "../lib/state.js";
+import { getGeoPosition, START_HUNT_MAX_DISTANCE_M } from "../lib/geo-hunt-rules.js";
+import { startHuntWithGeoCheck } from "../lib/start-hunt-flow.js";
+import { userHasWonChallenge } from "../services/attempts.js";
 import {
   getChallenge,
   huntStartAnchorCoords,
 } from "../services/challenges.js";
+import { isHuntFavorited, setHuntFavorited } from "../services/favorites.js";
+import { showAppToast } from "../lib/app-toast.js";
+import { promptReportChallenge } from "../services/reports.js";
+import { promptGuestNeedsSignIn } from "../services/auth.js";
 
 const MAP_MAX_ZOOM = 20;
 /** Keep some street context around the 150 m circle. */
@@ -263,9 +263,26 @@ export async function render(id) {
     }
     const startLabel = hasPriorWin ? "Restart hunt" : "Start hunt";
 
+    let favorited = false;
+    if (auth.currentUser) {
+      try {
+        favorited = await isHuntFavorited(id);
+      } catch {
+        favorited = false;
+      }
+    }
+    const favClass = favorited ? "hunt-favorite-btn is-favorited" : "hunt-favorite-btn";
+    const favLabel = favorited ? "Favorited" : "Favorite";
+
     renderShell(
       `
       <a href="#/" class="back-link">← All hunts</a>
+      <div class="challenge-hunt-toolbar">
+        <button type="button" class="${favClass}" id="challenge-favorite-btn" aria-pressed="${favorited ? "true" : "false"}" data-challenge-id="${escapeHtml(id)}">
+          <span class="hunt-favorite-btn__text">${favLabel}</span>
+        </button>
+        <button type="button" class="hunt-row__report challenge-hunt-report" aria-label="Report this hunt" title="Report" data-challenge-id="${escapeHtml(id)}" data-challenge-title="${escapeHtml(c.title || "Hunt")}">\u26A0\uFE0E</button>
+      </div>
       <div class="two-col-desktop challenge-detail-layout">
         <div class="challenge-detail-main">
           <span class="badge">${spots.length} checkpoint${spots.length === 1 ? "" : "s"} · ${c.timeLimitMinutes} min</span>
@@ -289,47 +306,52 @@ export async function render(id) {
       mountChallengeStartMap(huntAnchor);
     }
 
-    document
-      .getElementById("start-hunt")
-      .addEventListener("click", async () => {
-        const st = document.getElementById("challenge-status");
-        const btn = document.getElementById("start-hunt");
-        if (!auth.currentUser) {
-          saveAuthReturn(`#/challenge/${id}`);
-          nav("#/login");
+    document.getElementById("start-hunt").addEventListener("click", () => {
+      const st = document.getElementById("challenge-status");
+      const btn = document.getElementById("start-hunt");
+      void startHuntWithGeoCheck({
+        challenge: c,
+        challengeId: id,
+        statusEl: st,
+        buttonEl: btn,
+        loginReturnHash: `#/challenge/${id}`,
+        confirmRepeatWin: hasPriorWin,
+      });
+    });
+
+    const favBtn = document.getElementById("challenge-favorite-btn");
+    const reportBtn = document.querySelector(".challenge-hunt-report");
+    const titleSnap = c.title || "Hunt";
+
+    favBtn?.addEventListener("click", async () => {
+      if (!auth.currentUser) {
+        if (
+          await promptGuestNeedsSignIn("Saving favorites needs a Google account.")
+        ) {
           return;
         }
-        if (hasPriorWin) {
-          const ok = window.confirm(
-            "You've already completed this hunt once. Do you want to complete it again?",
-          );
-          if (!ok) return;
-        }
-        btn.disabled = true;
-        try {
-          st.innerHTML =
-            '<div class="status-banner info">Checking you are at the hunt…</div>';
-          const anchor = huntStartAnchorCoords(c);
-          const pos = await getGeoPosition();
-          assertWithinRadius(
-            pos.lat,
-            pos.lng,
-            anchor.lat,
-            anchor.lng,
-            START_HUNT_MAX_DISTANCE_M,
-            "the hunt start point",
-          );
-          st.innerHTML = "";
-          const attemptId = await createAttempt(
-            id,
-            c.timeLimitMinutes,
-          );
-          nav(`#/run/${attemptId}`);
-        } catch (err) {
-          st.innerHTML = `<div class="status-banner error">${escapeHtml(err.message)}</div>`;
-          btn.disabled = false;
-        }
+        return;
+      }
+      const on = favBtn.classList.contains("is-favorited");
+      try {
+        await setHuntFavorited(id, !on);
+        favBtn.classList.toggle("is-favorited", !on);
+        favBtn.setAttribute("aria-pressed", !on ? "true" : "false");
+        const label = favBtn.querySelector(".hunt-favorite-btn__text");
+        if (label) label.textContent = !on ? "Favorited" : "Favorite";
+        showAppToast(!on ? "Added to Favorited." : "Removed from Favorited.");
+      } catch (err) {
+        showAppToast(err?.message || "Could not update favorites.");
+      }
+    });
+
+    reportBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await promptReportChallenge({
+        challengeId: id,
+        huntTitle: titleSnap,
       });
+    });
   } catch (err) {
     renderShell(
       `<div class="page-narrow"><div class="status-banner error">${escapeHtml(err.message)}</div><p><a href="#/" class="back-link">← All hunts</a></p></div>`,

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f3ece2; --surface: #fdf9f3; --surface-2: #efe8dc;
+  --text: #221e1a; --text-muted: #5e564c;
+  --border: #dcd3c4; --border-strong: #c9bfb0;
+  --accent: #5c4a38; --accent-soft: rgba(92,74,56,.14);
+  --ok: #4a6b4f; --ok-soft: rgba(74,107,79,.15);
+  --danger: #a84848; --danger-soft: rgba(168,72,72,.12);
+  --brown-soft: rgba(122,92,69,.12); --brown: #7a5c45;
+  --radius-sm: 10px; --radius: 16px; --tap: 48px;
+  --shadow-sm: 0 1px 3px rgba(42,37,32,.06);
+}
+body { font-family: "DM Sans", sans-serif; background: var(--bg); padding: 14px; color: var(--text); display: flex; flex-direction: column; gap: 10px; }
+.form-field { display: flex; flex-direction: column; gap: .4rem; }
+.form-field label { font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+input[type="text"] { width: 100%; min-height: var(--tap); padding: .55rem .85rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: 1rem; box-sizing: border-box; }
+input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.status-banner { padding: .85rem 1rem; border-radius: var(--radius-sm); font-size: .92rem; border: 1px solid transparent; }
+.status-banner.info { background: var(--brown-soft); border-color: rgba(122,92,69,.28); }
+.status-banner.ok { background: var(--ok-soft); border-color: rgba(74,107,79,.35); }
+.status-banner.error { background: var(--danger-soft); border-color: rgba(168,72,72,.35); }
+.timer-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; border: 1px solid var(--border); }
+.timer-bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), #453624); }
+</style>
+</head>
+<body>
+  <div class="form-field">
+    <label>Hunt title</label>
+    <input type="text" value="Central Park Circuit" />
+  </div>
+  <div class="form-field">
+    <label>Location hint</label>
+    <input type="text" placeholder="e.g. Near the Bethesda Fountain" />
+  </div>
+  <div class="status-banner ok">You finished in time. Merits added to your profile.</div>
+  <div class="status-banner error">Time is up. Try another hunt!</div>
+  <div class="status-banner info">Time left: <strong>04:32</strong></div>
+  <div>
+    <div style="font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px">Timer bar — 65%</div>
+    <div class="timer-bar"><div style="width:65%"></div></div>
+  </div>
+</body>
+</html>

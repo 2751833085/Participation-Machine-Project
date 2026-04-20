@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --surface: #fdf9f3; --surface-2: #efe8dc; --bg: #f3ece2; --bg-warm: #e8dfd2;
+  --text: #221e1a; --text-muted: #5e564c;
+  --border: #dcd3c4; --accent: #5c4a38; --accent-soft: rgba(92,74,56,.14);
+  --shadow-sm: 0 1px 3px rgba(42,37,32,.06); --shadow-md: 0 10px 28px rgba(42,37,32,.08);
+  --radius: 16px; --radius-sm: 10px;
+  --font-display: "Cormorant Garamond", serif;
+}
+body { font-family: "DM Sans", sans-serif; background: var(--bg); padding: 14px; color: var(--text); display: flex; flex-direction: column; gap: 10px; }
+
+/* Hunt row card */
+.hunt-row { display: flex; align-items: center; min-height: 7.5rem; border-radius: var(--radius); overflow: hidden; border: 1px solid color-mix(in srgb, var(--border) 92%, rgba(92,74,56,.1)); background: var(--surface); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; }
+.hunt-row__thumb { flex: 0 0 7.5rem; width: 7.5rem; height: 7.5rem; background: linear-gradient(135deg, var(--surface-2), color-mix(in srgb, var(--accent) 22%, var(--surface-2))); overflow: hidden; }
+.hunt-row__body { flex: 1; padding: .88rem 1rem; display: flex; flex-direction: column; gap: .28rem; }
+.hunt-row__title { font-family: var(--font-display); font-size: 1.22rem; font-weight: 600; line-height: 1.22; }
+.hunt-row__meta { font-size: .88rem; color: var(--text-muted); }
+.badge { font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .5rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); align-self: flex-start; }
+
+/* Generic card */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; box-shadow: var(--shadow-md); }
+.card h3 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin-bottom: .35rem; }
+.card-meta { font-size: .88rem; color: var(--text-muted); margin-bottom: .75rem; }
+</style>
+</head>
+<body>
+  <!-- Hunt row cards -->
+  <a class="hunt-row" href="#">
+    <div class="hunt-row__thumb"></div>
+    <div class="hunt-row__body">
+      <span class="badge">Manhattan</span>
+      <p class="hunt-row__title">Central Park Circuit</p>
+      <p class="hunt-row__meta">5 checkpoints · 30 min</p>
+    </div>
+  </a>
+  <a class="hunt-row" href="#">
+    <div class="hunt-row__thumb" style="background:linear-gradient(135deg,#d4c9bc,#bfb0a0)"></div>
+    <div class="hunt-row__body">
+      <span class="badge">SoHo</span>
+      <p class="hunt-row__title">Gallery District Sprint</p>
+      <p class="hunt-row__meta">4 checkpoints · 20 min</p>
+    </div>
+  </a>
+  <!-- Generic card -->
+  <div class="card">
+    <h3>Run summary</h3>
+    <p class="card-meta">Completed 3 of 5 checkpoints</p>
+    <p style="font-size:.9rem;color:var(--text-muted)">Well done — merits awarded to your profile.</p>
+  </div>
+</body>
+</html>

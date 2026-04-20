@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --surface: #fdf9f3; --surface-2: #efe8dc; --bg: #f3ece2;
+  --text: #221e1a; --text-muted: #5e564c;
+  --border: #dcd3c4; --border-strong: #c9bfb0;
+  --accent: #5c4a38; --accent-hover: #453624; --accent-soft: rgba(92,74,56,.14);
+  --shadow-sm: 0 1px 3px rgba(42,37,32,.06);
+  --radius-sm: 10px; --tap: 48px;
+}
+body { font-family: "DM Sans", sans-serif; background: var(--bg); padding: 16px; color: var(--text); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+.label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 7px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--tap); padding: 0 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: .875rem; font-weight: 600; letter-spacing: .02em; cursor: pointer; box-shadow: var(--shadow-sm); }
+.btn-primary { background: var(--accent); border-color: transparent; color: #fffcf5; box-shadow: 0 4px 14px rgba(92,74,56,.35); }
+.btn-ghost { background: transparent; box-shadow: none; border-color: transparent; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: .45; }
+.btn-sm { min-height: 2.5rem; font-size: .75rem; padding: 0 .9rem; letter-spacing: .08em; text-transform: uppercase; }
+.badge { font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .28rem .5rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="label">Buttons</div>
+  <div class="row">
+    <button class="btn btn-primary">Start hunt</button>
+    <button class="btn">Browse all</button>
+    <button class="btn btn-ghost">Cancel</button>
+  </div>
+  <div class="row">
+    <button class="btn btn-primary btn-sm">Publish hunt</button>
+    <button class="btn btn-sm">View details</button>
+  </div>
+  <div class="row">
+    <button class="btn btn-primary" disabled>Loading…</button>
+    <button class="btn" disabled>Disabled</button>
+  </div>
+  <div class="label" style="margin-top:4px">Block + badges</div>
+  <div class="row" style="flex-direction:column; align-items:stretch; max-width:260px">
+    <button class="btn btn-primary btn-block">Sign in with Google</button>
+    <button class="btn btn-block">Continue as guest</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <span class="badge">Manhattan</span>
+    <span class="badge">5 checkpoints</span>
+    <span class="badge">30 min</span>
+  </div>
+</body>
+</html>
