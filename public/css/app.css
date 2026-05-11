@@ -3,9 +3,11 @@
  *
  * Theme entrypoint:
  *   - themes/index.css decides which visual theme bundles are active.
- *   - The current shipped bundle is "Classical" (existing Tourgo UI).
+ *   - The only shipped UI bundle is NeoUI.
  *
  * To add styles for a new feature, create a new CSS file and @import it here.
  */
 
 @import url("themes/index.css");
+@import url("design.css");
+@import url("motion.css");

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Tourgo Friends — UI</title>
+<meta name="viewport" content="width=1440"/>
+<meta http-equiv="Cache-Control" content="no-store"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'DM Sans', system-ui, sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="lib/design-canvas.jsx"></script>
+<script type="text/babel" src="lib/ios-frame.jsx"></script>
+<script type="text/babel" src="lib/neo-pages.jsx"></script>
+<script type="text/babel" src="lib/loaders.jsx"></script>
+<script type="text/babel" src="lib/friends-ui.jsx?v=role-after-dispersal"></script>
+<script type="text/babel" src="lib/preview-shell.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+function App() {
+  const friendsFlow = [
+    { id: 'fr-start',    label: '01 · Friends start',       C: FriendsStart },
+    { id: 'fr-create',   label: '02 · Create room',         C: FriendsCreateRoom },
+    { id: 'fr-join',     label: '03 · Join room',           C: FriendsJoinRoom },
+    { id: 'fr-ranks',    label: '04 · Friends ranks',       C: FriendsRanks },
+    { id: 'fr-social',   label: '05 · Social',              C: FriendsSocial },
+    { id: 'fr-me',       label: '06 · Me',                  C: FriendsMe },
+    { id: 'fr-lobby',    label: '07 · Room lobby',          C: FriendsLobby },
+    { id: 'fr-ready',    label: '08 · Ready check',         C: FriendsReadyCheck },
+    { id: 'fr-disperse', label: '09 · Dispersal',           C: FriendsDispersal },
+    { id: 'fr-role-runner', label: '10 · Role reveal · runner', C: FriendsRoleRevealRunner },
+    { id: 'fr-role-hunter', label: '11 · Role reveal · hunter', C: FriendsRoleRevealHunter },
+    { id: 'fr-hunter',   label: '12 · Hunter status',       C: FriendsHunterStatus },
+    { id: 'fr-runner',   label: '13 · Runner status',       C: FriendsRunnerStatus },
+    { id: 'fr-chat',     label: '14 · Team chat',           C: FriendsTeamChat },
+    { id: 'fr-hscan',    label: '15 · Hunter scan tab',     C: FriendsHunterScan },
+    { id: 'fr-rqr',      label: '16 · Runner QR tab',       C: FriendsRunnerQr },
+    { id: 'fr-about',    label: '17 · Room about',          C: FriendsRoomAbout },
+    { id: 'fr-camera',   label: '18 · Camera headshot',     C: FriendsCameraHeadshot },
+    { id: 'fr-preview',  label: '19 · Photo preview',       C: FriendsPhotoPreview },
+    { id: 'fr-scanner',  label: '20 · Scanner overlay',     C: FriendsScanner },
+    { id: 'fr-confirm',  label: '21 · Create confirm',      C: FriendsCreateConfirm },
+    { id: 'fr-add',      label: '22 · Add friend modal',    C: FriendsAddFriendModal },
+    { id: 'fr-capture',  label: '23 · Capture confirm',     C: FriendsCaptureConfirm },
+    { id: 'fr-stale',    label: '24 · Stalemate overlay',   C: FriendsStalemateOverlay },
+    { id: 'fr-relocate', label: '25 · Relocate alert',      C: FriendsRelocateAlert },
+    { id: 'fr-caught',   label: '26 · Captured overlay',    C: FriendsCapturedOverlay },
+    { id: 'fr-specstat', label: '27 · Spectator stats',     C: FriendsSpectatorStats },
+    { id: 'fr-specchat', label: '28 · Spectator chat',      C: FriendsSpectatorChat },
+    { id: 'fr-specexit', label: '29 · Spectator exit',      C: FriendsSpectatorExit },
+    { id: 'fr-end-h',    label: '30 · Hunters win',         C: FriendsEndHunters },
+    { id: 'fr-end-r',    label: '31 · Runners win',         C: FriendsEndRunners },
+    { id: 'fr-loading',  label: '32 · Creating room',       C: FriendsCreatingRoom },
+    { id: 'fr-success',  label: '33 · Created success',     C: FriendsCreatedSuccess },
+  ];
+
+  const keyboardFlow = [
+    { id: 'fr-create-keyboard', label: '34 · Create room · keyboard open', C: FriendsCreateRoom, keyboard: true },
+    { id: 'fr-join-keyboard', label: '35 · Join code · keyboard open', C: FriendsJoinRoom, keyboard: true },
+    { id: 'fr-add-keyboard', label: '36 · Add friend · keyboard open', C: FriendsAddFriendModal, keyboard: true, lift: 76 },
+    { id: 'fr-chat-keyboard', label: '37 · Team chat · keyboard open', C: FriendsTeamChat, keyboard: true },
+  ];
+
+  return (
+    <DesignCanvas>
+      <DCSection id="overview" title="Tourgo Friends UI"
+        subtitle="Room-based Friends UI aligned to Tourgo NeoUI. Preview artboards are pure iPhone-ratio app screens without device chrome, dynamic island, status bar, or home indicator.">
+        <DCPostIt>
+          PREVIEW — each artboard is a 390×844 screen crop. The app keeps the iPhone ratio, but the physical iPhone frame and system chrome are removed.
+        </DCPostIt>
+        <DCPostIt>
+          KEYBOARD — room name, invite code, friend code, and chat states include keyboard-open versions with the native iOS keyboard area visible below the active content.
+        </DCPostIt>
+      </DCSection>
+
+      <DCSection id="friends-light" title="Tourgo Friends · light"
+        subtitle="Friends UI in light mode: room setup, lobby, active play, camera, modals, spectator, results, and keyboard-open states">
+        {makeArtboards([...friendsFlow, ...keyboardFlow], false, '-friends-l')}
+      </DCSection>
+
+      <DCSection id="friends-dark" title="Tourgo Friends · dark"
+        subtitle="Friends UI in mineral graphite dark mode with hunter/runner role accents and keyboard-open states">
+        {makeArtboards([...friendsFlow, ...keyboardFlow], true, '-friends-d')}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

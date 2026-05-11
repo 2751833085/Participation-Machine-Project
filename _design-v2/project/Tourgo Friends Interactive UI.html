@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Tourgo Friends — Interactive UI Demo</title>
+<meta name="viewport" content="width=1440"/>
+<meta http-equiv="Cache-Control" content="no-store"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'DM Sans', system-ui, sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; }
+  button { -webkit-font-smoothing: antialiased; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="lib/ios-frame.jsx"></script>
+<script type="text/babel" src="lib/neo-pages.jsx"></script>
+<script type="text/babel" src="lib/loaders.jsx"></script>
+<script type="text/babel" src="lib/overlays.jsx"></script>
+<script type="text/babel" src="lib/extras.jsx"></script>
+<script type="text/babel" src="lib/main-ui.jsx"></script>
+<script type="text/babel" src="lib/friends-ui.jsx?v=role-after-dispersal"></script>
+<script type="text/babel" src="lib/preview-shell.jsx"></script>
+<script type="text/babel" src="lib/interactive-prototypes.jsx?v=demo-2"></script>
+<script type="text/babel" data-presets="react">
+  ReactDOM.createRoot(document.getElementById('root')).render(<FriendsInteractiveApp />);
+</script>
+</body>
+</html>

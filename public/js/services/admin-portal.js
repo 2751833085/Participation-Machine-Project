@@ -1,6 +1,6 @@
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-functions.js";
-import { app } from "../firebase-init.js";
-import { getAdminApiPassword } from "../lib/admin-session.js";
+import { app } from "./firebase.js";
+import { getAdminApiPassword } from "./auth.js";
 
 const REGION = "us-central1";
 

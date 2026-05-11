@@ -59,7 +59,7 @@ export function openConfirmModal({
   message,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  animate = false,
+  animate = true,
 }) {
   return new Promise((resolve) => {
     const backdrop = document.createElement("div");
@@ -68,12 +68,15 @@ export function openConfirmModal({
       : "modal-backdrop";
     backdrop.setAttribute("role", "presentation");
     backdrop.innerHTML = `
-      <div class="modal-dialog${animate ? " modal-dialog--animating" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-dlg-title">
-        <h2 id="modal-dlg-title" class="modal-dialog-title">${title}</h2>
-        <p class="modal-dialog-text">${message}</p>
-        <div class="modal-dialog-actions">
-          <button type="button" class="btn btn-ghost" data-action="cancel">${cancelText}</button>
-          <button type="button" class="btn btn-primary" data-action="confirm">${confirmText}</button>
+      <div class="modal-dialog ds-modal ds-modal--confirm${animate ? " modal-dialog--animating" : ""}" role="dialog" aria-modal="true" aria-labelledby="modal-dlg-title">
+        <div class="ds-modal__icon" aria-hidden="true">
+          <span class="ds-modal__icon-glyph">!</span>
+        </div>
+        <h2 id="modal-dlg-title" class="modal-dialog-title ds-modal__title">${title}</h2>
+        <p class="modal-dialog-text ds-modal__text">${message}</p>
+        <div class="modal-dialog-actions ds-modal__actions">
+          <button type="button" class="btn btn-primary ds-modal__btn ds-modal__btn--primary" data-action="confirm">${confirmText}</button>
+          <button type="button" class="btn btn-ghost ds-modal__btn ds-modal__btn--ghost" data-action="cancel">${cancelText}</button>
         </div>
       </div>
     `;
@@ -131,7 +134,7 @@ export function showPublishSuccessOverlay({
     backdrop.setAttribute("role", "presentation");
 
     const card = document.createElement("div");
-    card.className = "publish-success-card";
+    card.className = "publish-success-card ds-modal ds-modal--success";
     card.setAttribute("role", "status");
     card.setAttribute("aria-live", "polite");
 
@@ -181,95 +184,15 @@ export function openReportHuntModal({
   onSubmit,
 }) {
   return new Promise((resolve) => {
-    const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    backdrop.setAttribute("role", "presentation");
-
-    const dialog = document.createElement("div");
-    dialog.className = "modal-dialog report-hunt-dialog";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-labelledby", "report-hunt-title");
-
-    const h = document.createElement("h2");
-    h.className = "modal-dialog-title";
-    h.id = "report-hunt-title";
-    h.textContent = title;
-
-    const sub = document.createElement("p");
-    sub.className = "modal-dialog-text report-hunt-sub";
-    sub.textContent = huntTitle || "This hunt";
-
-    const fieldset = document.createElement("fieldset");
-    fieldset.className = "report-hunt-fieldset";
-    const leg = document.createElement("legend");
-    leg.className = "report-hunt-legend";
-    leg.textContent = "Why are you reporting?";
-    fieldset.appendChild(leg);
-
-    const radios = [];
-    categories.forEach((c, idx) => {
-      const row = document.createElement("div");
-      row.className = "report-hunt-option";
-      const inp = document.createElement("input");
-      inp.type = "radio";
-      inp.name = "report-hunt-cat";
-      inp.value = c.id;
-      inp.id = `report-hunt-cat-${c.id}`;
-      if (idx === 0) inp.checked = true;
-      const lab = document.createElement("label");
-      lab.htmlFor = inp.id;
-      lab.textContent = c.label;
-      row.append(inp, lab);
-      fieldset.appendChild(row);
-      radios.push(inp);
-    });
-
-    const detLab = document.createElement("label");
-    detLab.className = "report-hunt-details-label";
-    detLab.htmlFor = "report-hunt-details";
-    detLab.textContent = "Additional details (optional)";
-
-    const ta = document.createElement("textarea");
-    ta.id = "report-hunt-details";
-    ta.className = "input-grow report-hunt-details";
-    ta.rows = 4;
-    ta.maxLength = 2000;
-    ta.setAttribute("placeholder", "Optional context.");
-
-    const hint = document.createElement("p");
-    hint.className = "report-hunt-hint";
-    hint.textContent =
-      "Reports are sent to Tourgo staff. Misuse may affect your account.";
-
-    const errEl = document.createElement("p");
-    errEl.className = "profile-edit-hunt-err report-hunt-err";
-    errEl.setAttribute("aria-live", "polite");
-    errEl.hidden = true;
-
-    const actions = document.createElement("div");
-    actions.className = "modal-dialog-actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.className = "btn btn-ghost";
-    cancelBtn.textContent = "Cancel";
-    const submitBtn = document.createElement("button");
-    submitBtn.type = "button";
-    submitBtn.className = "btn btn-primary";
-    submitBtn.textContent = "Submit report";
-
-    actions.append(cancelBtn, submitBtn);
-    dialog.append(
-      h,
-      sub,
-      fieldset,
-      detLab,
-      ta,
-      hint,
+    const {
+      backdrop,
+      cancelBtn,
+      dialog,
       errEl,
-      actions,
-    );
-    backdrop.appendChild(dialog);
+      radios,
+      submitBtn,
+      ta,
+    } = reportModalElements({ title, huntTitle, categories });
 
     const finish = (ok) => {
       backdrop.remove();
@@ -320,6 +243,127 @@ export function openReportHuntModal({
   });
 }
 
+function reportModalElements({ title, huntTitle, categories }) {
+  const backdrop = reportBackdrop();
+  const dialog = reportDialog();
+  const titleEl = reportTitle(title);
+  const sub = reportSubtitle(huntTitle);
+  const { fieldset, radios } = reportCategoryFieldset(categories);
+  const { detailsLabel, ta } = reportDetailsField();
+  const hint = reportHint();
+  const errEl = reportErrorElement();
+  const { actions, cancelBtn, submitBtn } = reportActions();
+  dialog.append(titleEl, sub, fieldset, detailsLabel, ta, hint, errEl, actions);
+  backdrop.appendChild(dialog);
+  return { backdrop, cancelBtn, dialog, errEl, radios, submitBtn, ta };
+}
+
+function reportBackdrop() {
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.setAttribute("role", "presentation");
+  return backdrop;
+}
+
+function reportDialog() {
+  const dialog = document.createElement("div");
+  dialog.className = "modal-dialog report-hunt-dialog ds-modal ds-modal--report";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "report-hunt-title");
+  return dialog;
+}
+
+function reportTitle(title) {
+  const h = document.createElement("h2");
+  h.className = "modal-dialog-title ds-modal__title";
+  h.id = "report-hunt-title";
+  h.textContent = title;
+  return h;
+}
+
+function reportSubtitle(huntTitle) {
+  const sub = document.createElement("p");
+  sub.className = "modal-dialog-text report-hunt-sub";
+  sub.textContent = huntTitle || "This hunt";
+  return sub;
+}
+
+function reportCategoryFieldset(categories) {
+  const fieldset = document.createElement("fieldset");
+  fieldset.className = "report-hunt-fieldset";
+  const leg = document.createElement("legend");
+  leg.className = "report-hunt-legend";
+  leg.textContent = "Why are you reporting?";
+  fieldset.appendChild(leg);
+  const radios = categories.map((category, idx) => reportCategoryRadio(category, idx, fieldset));
+  return { fieldset, radios };
+}
+
+function reportCategoryRadio(category, idx, fieldset) {
+  const row = document.createElement("div");
+  row.className = "report-hunt-option";
+  const inp = document.createElement("input");
+  inp.type = "radio";
+  inp.name = "report-hunt-cat";
+  inp.value = category.id;
+  inp.id = `report-hunt-cat-${category.id}`;
+  if (idx === 0) inp.checked = true;
+  const lab = document.createElement("label");
+  lab.htmlFor = inp.id;
+  lab.textContent = category.label;
+  row.append(inp, lab);
+  fieldset.appendChild(row);
+  return inp;
+}
+
+function reportDetailsField() {
+  const detailsLabel = document.createElement("label");
+  detailsLabel.className = "report-hunt-details-label";
+  detailsLabel.htmlFor = "report-hunt-details";
+  detailsLabel.textContent = "Additional details (optional)";
+  const ta = document.createElement("textarea");
+  ta.id = "report-hunt-details";
+  ta.className = "input-grow report-hunt-details";
+  ta.rows = 4;
+  ta.maxLength = 2000;
+  ta.setAttribute("placeholder", "Optional context.");
+  return { detailsLabel, ta };
+}
+
+function reportHint() {
+  const hint = document.createElement("p");
+  hint.className = "report-hunt-hint";
+  hint.textContent =
+    "Reports are sent to Tourgo staff. Misuse may affect your account.";
+  return hint;
+}
+
+function reportErrorElement() {
+  const errEl = document.createElement("p");
+  errEl.className = "profile-edit-hunt-err report-hunt-err";
+  errEl.setAttribute("aria-live", "polite");
+  errEl.hidden = true;
+  return errEl;
+}
+
+function reportActions() {
+  const actions = document.createElement("div");
+  actions.className = "modal-dialog-actions";
+  const cancelBtn = reportButton("btn btn-ghost", "Cancel");
+  const submitBtn = reportButton("btn btn-primary", "Submit report");
+  actions.append(cancelBtn, submitBtn);
+  return { actions, cancelBtn, submitBtn };
+}
+
+function reportButton(className, text) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = className;
+  btn.textContent = text;
+  return btn;
+}
+
 /** Single-action notice (OK only). Uses text nodes — safe for any string. */
 export function openAlertModal({
   title,
@@ -331,24 +375,31 @@ export function openAlertModal({
     backdrop.className = "modal-backdrop";
     backdrop.setAttribute("role", "presentation");
     const dialog = document.createElement("div");
-    dialog.className = "modal-dialog";
+    dialog.className = "modal-dialog ds-modal ds-modal--alert";
     dialog.setAttribute("role", "alertdialog");
     dialog.setAttribute("aria-modal", "true");
+
+    const iconEl = document.createElement("div");
+    iconEl.className = "ds-modal__icon";
+    iconEl.setAttribute("aria-hidden", "true");
+    iconEl.innerHTML = '<span class="ds-modal__icon-glyph">i</span>';
+
     const h = document.createElement("h2");
-    h.className = "modal-dialog-title";
+    h.className = "modal-dialog-title ds-modal__title";
     h.id = "alert-dlg-title";
     h.textContent = title;
     const p = document.createElement("p");
-    p.className = "modal-dialog-text";
+    p.className = "modal-dialog-text ds-modal__text";
     p.textContent = message;
     const actions = document.createElement("div");
-    actions.className = "modal-dialog-actions";
+    actions.className = "modal-dialog-actions ds-modal__actions";
     const okBtn = document.createElement("button");
     okBtn.type = "button";
-    okBtn.className = "btn btn-primary";
+    okBtn.className = "btn btn-primary ds-modal__btn ds-modal__btn--primary";
     okBtn.dataset.action = "ok";
     okBtn.textContent = okText;
     actions.appendChild(okBtn);
+    dialog.appendChild(iconEl);
     dialog.appendChild(h);
     dialog.appendChild(p);
     dialog.appendChild(actions);
@@ -374,119 +425,5 @@ export function openAlertModal({
 
     mountModalWithSheetEnter(backdrop);
     okBtn.focus();
-  });
-}
-
-/**
- * Language picker modal: select first, apply on explicit confirm.
- * @param {{
- *   title: string,
- *   options: { code: string, label: string }[],
- *   selectedCode: string,
- *   confirmText?: string,
- *   cancelText?: string,
- *   cancelIcon?: string,
- * }} opts
- * @returns {Promise<string|null>} selected language code when confirmed; null when canceled
- */
-export function openLanguagePickerModal({
-  title,
-  options,
-  selectedCode,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
-  cancelIcon = "✕",
-}) {
-  return new Promise((resolve) => {
-    const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    backdrop.setAttribute("role", "presentation");
-
-    const dialog = document.createElement("div");
-    dialog.className = "modal-dialog language-picker-modal";
-    dialog.setAttribute("role", "dialog");
-    dialog.setAttribute("aria-modal", "true");
-    dialog.setAttribute("aria-labelledby", "language-picker-title");
-
-    const h = document.createElement("h2");
-    h.className = "modal-dialog-title";
-    h.id = "language-picker-title";
-    h.textContent = title;
-
-    const list = document.createElement("div");
-    list.className = "language-picker-list";
-    list.setAttribute("role", "listbox");
-    list.setAttribute("aria-label", title);
-
-    let pendingCode = selectedCode;
-
-    const optionButtons = options.map((option) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "language-picker-option";
-      btn.dataset.code = option.code;
-      btn.setAttribute("role", "option");
-      btn.textContent = option.label;
-      if (option.code === pendingCode) {
-        btn.classList.add("is-selected");
-        btn.setAttribute("aria-selected", "true");
-      } else {
-        btn.setAttribute("aria-selected", "false");
-      }
-      btn.addEventListener("click", () => {
-        pendingCode = option.code;
-        optionButtons.forEach((el) => {
-          const on = el.dataset.code === pendingCode;
-          el.classList.toggle("is-selected", on);
-          el.setAttribute("aria-selected", on ? "true" : "false");
-        });
-      });
-      return btn;
-    });
-    optionButtons.forEach((btn) => list.appendChild(btn));
-
-    const actions = document.createElement("div");
-    actions.className = "modal-dialog-actions";
-
-    const cancelIconBtn = document.createElement("button");
-    cancelIconBtn.type = "button";
-    cancelIconBtn.className = "btn btn-ghost language-picker-cancel-icon";
-    cancelIconBtn.setAttribute("aria-label", cancelText);
-    cancelIconBtn.setAttribute("title", cancelText);
-    cancelIconBtn.textContent = cancelIcon;
-
-    const confirmBtn = document.createElement("button");
-    confirmBtn.type = "button";
-    confirmBtn.className = "btn btn-primary";
-    confirmBtn.textContent = confirmText;
-
-    actions.append(cancelIconBtn, confirmBtn);
-    dialog.append(h, list, actions);
-    backdrop.appendChild(dialog);
-
-    const finish = (value) => {
-      backdrop.remove();
-      setModalMapBlur(false);
-      document.removeEventListener("keydown", onKey);
-      resolve(value);
-    };
-
-    const onKey = (e) => {
-      if (e.key === "Escape") finish(null);
-      if (e.key === "Enter") finish(pendingCode);
-    };
-    document.addEventListener("keydown", onKey);
-
-    backdrop.addEventListener("click", (e) => {
-      if (e.target === backdrop) finish(null);
-    });
-    dialog.addEventListener("click", (e) => e.stopPropagation());
-
-    cancelIconBtn.addEventListener("click", () => finish(null));
-    confirmBtn.addEventListener("click", () => finish(pendingCode));
-
-    mountModalWithSheetEnter(backdrop);
-    const selectedBtn = optionButtons.find((btn) => btn.dataset.code === pendingCode);
-    (selectedBtn || optionButtons[0] || cancelIconBtn).focus();
   });
 }

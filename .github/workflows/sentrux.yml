@@ -1,0 +1,25 @@
+# Architecture rules from .sentrux/rules.toml (layers, boundaries, constraints).
+# https://github.com/sentrux/sentrux/blob/main/README.zh-CN.md
+name: Sentrux
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Sentrux
+        run: curl -fsSL https://raw.githubusercontent.com/sentrux/sentrux/main/install.sh | sh
+
+      - name: Sentrux check
+        run: sentrux check .
+
+      # Compare metrics to committed `.sentrux/baseline.json` (refresh with `sentrux gate --save .` on purpose).
+      - name: Sentrux gate (baseline)
+        run: sentrux gate .

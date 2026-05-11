@@ -1,0 +1,16 @@
+/*
+ * NeoUI theme bundle (single active UI system)
+ * ---------------------------------------------
+ * This bundle is now the only visual system:
+ * - core structural styles
+ * - NeoUI overrides
+ * - no classical theme path
+ */
+
+@import url("../tokens.css");
+@import url("../base.css");
+@import url("../components.css");
+@import url("../layout.css");
+@import url("../pages.css");
+@import url("../portrait-gate.css");
+@import url("./neo-design.css");

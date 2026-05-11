@@ -2,7 +2,7 @@
  * Shared hunt row markup for Open hunts and Favorited feeds.
  */
 
-import { escapeHtml } from "../lib/utils.js";
+import { escapeHtml } from "./component-utils.js";
 
 /**
  * @param {{

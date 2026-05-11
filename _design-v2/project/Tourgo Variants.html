@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Tourgo — NeoUI screens</title>
+<meta name="viewport" content="width=1440"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'DM Sans', system-ui, sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="lib/design-canvas.jsx"></script>
+<script type="text/babel" src="lib/ios-frame.jsx"></script>
+<script type="text/babel" src="lib/neo-pages.jsx"></script>
+<script type="text/babel" src="lib/loaders.jsx"></script>
+<script type="text/babel" src="lib/overlays.jsx"></script>
+<script type="text/babel" src="lib/extras.jsx"></script>
+<script type="text/babel" src="lib/main-ui.jsx"></script>
+<script type="text/babel" src="lib/friends-ui.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+// Each screen lives inside an iOS device; we set keyboard=false and title=undefined so
+// it's just the bare viewport plus status bar / home indicator — the pages draw their
+// own headers and docks.
+function Phone({ children, dark }) {
+  return (
+    <IOSDevice width={390} height={844} dark={dark}>
+      {children}
+    </IOSDevice>
+  );
+}
+
+const PHONE_W = 390;
+const PHONE_H = 844;
+// Artboard padding that DesignCanvas applies — leave a little slack for the device shadow
+const AB_W = PHONE_W + 80;
+const AB_H = PHONE_H + 80;
+
+function Frame({ dark, children }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: dark ? NEO.dark.bgAlt : '#f5f1e8',
+    }}>
+      <Phone dark={dark}>{children}</Phone>
+    </div>
+  );
+}
+
+function App() {
+  const neoFlow = [
+    { id: 'ne-welcome',  label: '01 · Welcome',       C: NeoWelcome     },
+    { id: 'ne-login',    label: '02 · Sign in',       C: NeoLogin       },
+    { id: 'ne-home',     label: '03 · Hunts home',    C: NeoHome        },
+    { id: 'ne-detail',   label: '04 · Hunt detail',   C: NeoChallenge   },
+    { id: 'ne-run',      label: '05 · Active run',    C: NeoRun         },
+    { id: 'ne-rank',     label: '06 · Leaderboard',   C: NeoLeaderboard },
+    { id: 'ne-profile',  label: '07 · Profile',       C: NeoProfile     },
+    { id: 'ne-loading',  label: '08 · Loading',       C: NeoLoadingScreen },
+    { id: 'ne-inline-loading', label: '09 · Loading overlay', C: NeoInlineLoadingPanel },
+    { id: 'ne-daily',    label: '10 · Daily welcome', C: NeoDailyWelcome},
+    { id: 'ne-confirm',  label: '11 · Confirm modal', C: NeoConfirmModal},
+    { id: 'ne-banner',   label: '12 · Top banner',    C: NeoBanner      },
+    { id: 'ne-reviews',  label: '13 · Reviews',       C: NeoComments    },
+    { id: 'ne-grid',     label: '14 · Grid view',     C: NeoGrid        },
+    { id: 'ne-map',      label: '15 · Map explore',   C: NeoMapExplore  },
+    { id: 'ne-create-picker', label: '16 · Create menu', C: NeoCreatePicker },
+    { id: 'ne-create',   label: '17 · Create hunt',   C: NeoCreate      },
+    { id: 'ne-create-map', label: '18 · Create map sheet', C: NeoCreateMapSheet },
+    { id: 'ne-photo-proof', label: '19 · Photo proof', C: NeoPhotoProof },
+    { id: 'ne-saved',    label: '20 · Saved',         C: NeoSaved       },
+    { id: 'ne-admin',    label: '21 · Admin',         C: NeoAdminDashboard },
+    { id: 'ne-profile-menu', label: '22 · Profile menu', C: NeoProfileMenuSheet },
+    { id: 'ne-filter-sheet', label: '23 · Filter sheet', C: NeoFilterSheet },
+    { id: 'ne-report',   label: '24 · Report modal',  C: NeoReportModal },
+    { id: 'ne-publish-success', label: '25 · Publish success', C: NeoPublishSuccess },
+  ];
+
+  const friendsFlow = [
+    { id: 'fr-start',    label: '01 · Friends start',       C: FriendsStart },
+    { id: 'fr-create',   label: '02 · Create room',         C: FriendsCreateRoom },
+    { id: 'fr-join',     label: '03 · Join room',           C: FriendsJoinRoom },
+    { id: 'fr-ranks',    label: '04 · Friends ranks',       C: FriendsRanks },
+    { id: 'fr-social',   label: '05 · Social',              C: FriendsSocial },
+    { id: 'fr-me',       label: '06 · Me',                  C: FriendsMe },
+    { id: 'fr-lobby',    label: '07 · Room lobby',          C: FriendsLobby },
+    { id: 'fr-ready',    label: '08 · Ready check',         C: FriendsReadyCheck },
+    { id: 'fr-disperse', label: '09 · Dispersal',           C: FriendsDispersal },
+    { id: 'fr-hunter',   label: '10 · Hunter status',       C: FriendsHunterStatus },
+    { id: 'fr-runner',   label: '11 · Runner status',       C: FriendsRunnerStatus },
+    { id: 'fr-chat',     label: '12 · Team chat',           C: FriendsTeamChat },
+    { id: 'fr-hscan',    label: '13 · Hunter scan tab',     C: FriendsHunterScan },
+    { id: 'fr-rqr',      label: '14 · Runner QR tab',       C: FriendsRunnerQr },
+    { id: 'fr-about',    label: '15 · Room about',          C: FriendsRoomAbout },
+    { id: 'fr-camera',   label: '16 · Camera headshot',     C: FriendsCameraHeadshot },
+    { id: 'fr-preview',  label: '17 · Photo preview',       C: FriendsPhotoPreview },
+    { id: 'fr-scanner',  label: '18 · Scanner overlay',     C: FriendsScanner },
+    { id: 'fr-confirm',  label: '19 · Create confirm',      C: FriendsCreateConfirm },
+    { id: 'fr-add',      label: '20 · Add friend modal',    C: FriendsAddFriendModal },
+    { id: 'fr-capture',  label: '21 · Capture confirm',     C: FriendsCaptureConfirm },
+    { id: 'fr-stale',    label: '22 · Stalemate overlay',   C: FriendsStalemateOverlay },
+    { id: 'fr-relocate', label: '23 · Relocate alert',      C: FriendsRelocateAlert },
+    { id: 'fr-caught',   label: '24 · Captured overlay',    C: FriendsCapturedOverlay },
+    { id: 'fr-specstat', label: '25 · Spectator stats',     C: FriendsSpectatorStats },
+    { id: 'fr-specchat', label: '26 · Spectator chat',      C: FriendsSpectatorChat },
+    { id: 'fr-specexit', label: '27 · Spectator exit',      C: FriendsSpectatorExit },
+    { id: 'fr-end-h',    label: '28 · Hunters win',         C: FriendsEndHunters },
+    { id: 'fr-end-r',    label: '29 · Runners win',         C: FriendsEndRunners },
+    { id: 'fr-loading',  label: '30 · Creating room',       C: FriendsCreatingRoom },
+    { id: 'fr-success',  label: '31 · Created success',     C: FriendsCreatedSuccess },
+  ];
+
+  const artboards = (flow, dark, suffix) => flow.map(({ id, label, C }) => (
+    <DCArtboard key={id + suffix} id={id + suffix} label={label} width={AB_W} height={AB_H}>
+      <Frame dark={dark}><C dark={dark}/></Frame>
+    </DCArtboard>
+  ));
+
+  return (
+    <DesignCanvas>
+      <DCSection id="overview" title="Tourgo NeoUI"
+        subtitle="Timed photo-hunt app · Manhattan. NeoUI is the only active theme, shown across the main app screens, Rose Orbit loading states, admin surface, camera proof, and popup menus in light and dark modes.">
+
+        <DCPostIt>
+          NEO — softened orange + deep green, Barlow Condensed slabs, color-blocked cards with hard drop shadows. Dark mode now uses a mineral graphite base with calmer low-chroma cards.
+        </DCPostIt>
+        <DCPostIt>
+      LOADING — all blocking and inline loading states use the Rose Orbit math-curve animation, recolored from NeoUI tokens for light and dark mode.
+        </DCPostIt>
+        <DCPostIt>
+          FRIENDS — room setup, team lobby, active hunter/runner play, camera scan, popup menus, spectator, and end states now continue below the main Tourgo UI.
+        </DCPostIt>
+
+      </DCSection>
+
+      <DCSection id="ne-light" title="NeoUI · light"
+        subtitle="Cream background, orange primary, color-block cards with hard shadows">
+        {artboards(neoFlow, false, '-ne-l')}
+      </DCSection>
+
+      <DCSection id="ne-dark" title="NeoUI · dark"
+        subtitle="Mineral graphite background, same color-blocks pulled down-chroma, copy stays punchy">
+        {artboards(neoFlow, true, '-ne-d')}
+      </DCSection>
+
+      <DCSection id="friends-light" title="Tourgo Friends · light"
+        subtitle="Room-based social play aligned to the NeoUI main app: lobby, teams, camera scan, modals, spectator, and results">
+        {artboards(friendsFlow, false, '-fr-l')}
+      </DCSection>
+
+      <DCSection id="friends-dark" title="Tourgo Friends · dark"
+        subtitle="Friends uses the same mineral graphite dark mode, with hunter/runner role accents kept legible">
+        {artboards(friendsFlow, true, '-fr-d')}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

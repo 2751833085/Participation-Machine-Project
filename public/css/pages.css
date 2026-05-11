@@ -8,8 +8,7 @@
   margin-bottom: clamp(1.35rem, 3.5dvh, 1.85rem);
 }
 
-/* Hunts, Saved, Create, Rank, Profile — same hero band as home (tighter than generic .hero). */
-.home-page .hero,
+/* Create, Rank, Profile — tighter hero band on these pages. */
 .create-map-page .hero,
 .create-mode-page .hero.create-mode-hero,
 .leaderboard-page .hero.leaderboard-hero,
@@ -26,18 +25,6 @@
   color: var(--accent);
   margin: 0 0 0.6rem;
   padding-left: var(--title-text-inset);
-}
-
-/* Home: date + weather line — same accent as old kicker, nudged slightly right */
-.home-page .home-hero-eyebrow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  line-height: 1.45;
-  max-width: 36rem;
-  color: var(--accent);
-  padding-left: calc(var(--title-text-inset) + 0.22rem);
 }
 
 .hero-title {
@@ -70,34 +57,8 @@
   }
 }
 
-.home-page .hero-context {
-  margin-bottom: clamp(0.32rem, 1.1dvh, 0.5rem);
-}
-
 .hero-context[hidden] {
   display: none !important;
-}
-
-@keyframes homeHeroCtxIn {
-  from {
-    opacity: 0;
-    transform: translateY(0.3rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.hero-context.hero-context--enter {
-  animation: homeHeroCtxIn 0.52s var(--ease) forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-context.hero-context--enter {
-    animation: none;
-  }
 }
 
 .hero-lead {
@@ -106,33 +67,6 @@
   max-width: none;
   font-size: 0.96rem;
   line-height: 1.58;
-}
-
-/* Home explainer — clearly subordinate to greeting + NYC context line */
-.home-page .hero-lead {
-  font-size: 0.8rem;
-  line-height: 1.5;
-  font-weight: 400;
-  max-width: 40rem;
-  color: color-mix(in srgb, var(--text-muted) 82%, var(--border) 18%);
-}
-
-.home-page .hero-lead strong {
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.home-feed-section .section-title {
-  margin-bottom: 1.15rem;
-  font-size: clamp(1.38rem, 5vw, 1.72rem);
-}
-
-.home-page .section {
-  padding-top: 0;
-}
-
-.home-page .home-feed-section .section-title {
-  margin-bottom: 0.85rem;
 }
 
 /* ── Open hunts — compact list (mobile + desktop) ── */
@@ -494,7 +428,7 @@ html[data-theme="dark"] .city-blip {
   min-height: min(100dvh - 2.75rem, 900px);
 }
 
-/* ── Welcome carousel (4 slides) ── */
+/* ── Welcome carousel (5 slides) ── */
 
 .welcome-carousel {
   --welcome-carousel-ease: cubic-bezier(0.32, 0.72, 0, 1);
@@ -526,16 +460,16 @@ html[data-theme="dark"] .city-blip {
 .welcome-carousel-track {
   display: flex;
   align-items: stretch;
-  width: 400%;
+  width: 500%;
   min-height: 100%;
   transition: transform var(--welcome-carousel-duration) var(--welcome-carousel-ease);
   will-change: transform;
 }
 
 .welcome-slide {
-  flex: 0 0 25%;
-  width: 25%;
-  max-width: 25%;
+  flex: 0 0 20%;
+  width: 20%;
+  max-width: 20%;
   box-sizing: border-box;
   padding: 0 2px;
   display: flex;
@@ -693,6 +627,10 @@ html[data-theme="dark"] .city-blip {
 
 .welcome-slide--signin .welcome-signin-final-panel .auth-legal {
   margin-top: 0.65rem;
+}
+
+.neo-theme-inline-fieldset {
+  margin: 0.85rem 0 0;
 }
 
 .welcome-carousel-controls {
@@ -1586,6 +1524,74 @@ html[data-theme="dark"] .city-blip {
   margin-top: 0.4rem;
 }
 
+.profile-welcome-toggle {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.profile-welcome-toggle__label {
+  display: block;
+  margin: 0 0 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-welcome-toggle__checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 3rem;
+  height: 1.76rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
+  background: var(--surface-2);
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+.profile-welcome-toggle__checkbox::before {
+  content: "";
+  position: absolute;
+  top: 0.13rem;
+  left: 0.14rem;
+  width: 1.36rem;
+  height: 1.36rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 22%, transparent);
+  transition: transform 0.2s var(--ease);
+}
+
+.profile-welcome-toggle__checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.profile-welcome-toggle__checkbox:checked::before {
+  transform: translateX(1.2rem);
+}
+
+.profile-welcome-toggle__checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.profile-theme-pill:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-theme-pill:has(input:disabled):hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
 .profile-ui-theme-pill span {
   display: inline-flex;
   align-items: center;
@@ -2153,9 +2159,9 @@ a.create-mode-card--active:active {
   }
 }
 
-/* In-flow map: full width like header/hint; rounded corners; gap above form (no ring/outline). */
+/* In-flow map: keep the header/hint full width, but restore the map/sheet gutter. */
 .create-map-checkpoint-scroll > .create-map-fs-map-host {
-  margin: 0 0 1rem;
+  margin: 0 29px 1rem;
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
@@ -2342,11 +2348,11 @@ body.create-map-fs-open .app-dock {
   right: auto;
   top: auto;
   bottom: auto;
-  width: 100%;
+  width: auto;
   height: auto;
   max-height: none;
   display: block;
-  margin: 0;
+  margin: 0 14px 20px;
   padding: 0;
   transform: none !important;
   transition: none;
@@ -2364,23 +2370,24 @@ body.create-map-fs-open .app-dock {
   display: block !important;
 }
 
-.create-map-fs .create-map-sheet-inner.create-map-sheet-panel {
+#create-map-fs .create-map-sheet-inner.create-map-sheet-panel {
   pointer-events: auto;
   max-width: none;
   width: 100%;
   margin: 0;
+  box-sizing: border-box;
   min-height: min-content;
   overflow: visible;
-  padding: 1.2rem 1.1rem 1.1rem;
+  padding: 1.15rem 15px 1.1rem;
   padding-bottom: max(
     2.35rem,
     calc(1.6rem + env(safe-area-inset-bottom, 0px) + 0.5rem)
   );
   scroll-padding-bottom: max(2rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-radius: 0;
   border: none;
-  box-shadow: 0 -12px 48px color-mix(in srgb, var(--text) 14%, transparent);
-  background: var(--surface);
+  box-shadow: none;
+  background: transparent;
 }
 
 .sheet-head {
@@ -2440,20 +2447,32 @@ body.create-map-fs-open .app-dock {
 
 .create-map-sheet .sheet-coords {
   font-size: 0.82rem;
-  padding-left: 0;
+  font-family: var(--font-ui, "DM Sans", sans-serif);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
   margin-bottom: 0.95rem;
 }
 
 .create-map-sheet .photo-drop {
+  display: flex;
+  flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  min-height: 140px;
-  padding: 1rem 1.05rem;
+  min-height: 152px;
+  padding: 1.05rem;
 }
 
 .create-map-sheet .photo-drop-empty {
+  display: flex;
+  justify-content: flex-start;
   align-items: flex-start;
+  gap: 0.45rem;
   text-align: left;
+}
+
+.create-map-sheet .photo-drop-icon {
+  margin-bottom: 0.1rem;
 }
 
 .create-map-sheet .photo-drop-sub {
@@ -2462,12 +2481,16 @@ body.create-map-fs-open .app-dock {
 
 .create-map-sheet .sheet-form .form-field label {
   font-size: 0.98rem;
+  display: block;
+  margin: 0 0 0.5rem;
+  line-height: 1;
 }
 
 .create-map-sheet .sheet-form .form-field input[type="text"] {
   font-size: 1.04rem;
   min-height: 2.8rem;
   padding: 0.55rem 0.78rem;
+  line-height: 1.2;
 }
 
 .create-map-sheet .time-slider-out {
@@ -2480,11 +2503,20 @@ body.create-map-fs-open .app-dock {
 
 .create-map-sheet .photo-drop-sub {
   font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .create-map-sheet .sheet-submit {
   min-height: 3rem;
   font-size: 1.05rem;
+}
+
+.create-map-sheet .sheet-form .sheet-field {
+  margin-bottom: 1rem;
+}
+
+.create-map-sheet .sheet-form .sheet-field:last-of-type {
+  margin-bottom: 0.45rem;
 }
 
 .sheet-icon-btn {

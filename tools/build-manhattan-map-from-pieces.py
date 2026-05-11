@@ -129,31 +129,40 @@ def path_bbox(d: str) -> tuple[float, float, float, float]:
 def element_bbox(el: ET.Element) -> tuple[float, float, float, float] | None:
     t = local_tag(el.tag)
     if t == "rect":
-        try:
-            x = float(el.get("x") or 0)
-            y = float(el.get("y") or 0)
-            w = float(el.get("width") or 0)
-            h = float(el.get("height") or 0)
-        except ValueError:
-            return None
-        return (x, y, x + w, y + h)
+        return rect_bbox(el)
     if t == "path":
-        d = el.get("d")
-        if not d:
-            return None
-        return path_bbox(d)
+        return path_element_bbox(el)
     if t in ("polygon", "polyline"):
-        pts = el.get("points", "")
-        pairs = re.findall(
-            r"([-+]?(?:\d*\.?\d+|\d+\.?\d*))\s*[, ]\s*([-+]?(?:\d*\.?\d+|\d+\.?\d*))",
-            pts,
-        )
-        if not pairs:
-            return None
-        xs = [float(a) for a, _ in pairs]
-        ys = [float(b) for _, b in pairs]
-        return (min(xs), min(ys), max(xs), max(ys))
+        return points_bbox(el.get("points", ""))
     return None
+
+
+def rect_bbox(el: ET.Element) -> tuple[float, float, float, float] | None:
+    try:
+        x = float(el.get("x") or 0)
+        y = float(el.get("y") or 0)
+        w = float(el.get("width") or 0)
+        h = float(el.get("height") or 0)
+    except ValueError:
+        return None
+    return (x, y, x + w, y + h)
+
+
+def path_element_bbox(el: ET.Element) -> tuple[float, float, float, float] | None:
+    d = el.get("d")
+    return path_bbox(d) if d else None
+
+
+def points_bbox(points: str) -> tuple[float, float, float, float] | None:
+    pairs = re.findall(
+        r"([-+]?(?:\d*\.?\d+|\d+\.?\d*))\s*[, ]\s*([-+]?(?:\d*\.?\d+|\d+\.?\d*))",
+        points,
+    )
+    if not pairs:
+        return None
+    xs = [float(a) for a, _ in pairs]
+    ys = [float(b) for _, b in pairs]
+    return (min(xs), min(ys), max(xs), max(ys))
 
 
 def union_bboxes(boxes: list[tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
@@ -174,6 +183,28 @@ def parse_reference_region_bboxes(ref_path: Path) -> dict[str, tuple[float, floa
     start = text.find('<g class="mh-chroma-layer"')
     if start == -1:
         raise SystemExit("reference: mh-chroma-layer not found")
+    inner = reference_chroma_inner(text, start)
+    by_region: dict[str, list[tuple[float, float, float, float]]] = defaultdict(list)
+    for m in re.finditer(r"<rect\b([^>]*)/>", inner):
+        attrs = m.group(1)
+        row = reference_rect_bbox(attrs)
+        if row:
+            key, bbox = row
+            by_region[key].append(bbox)
+    for m in re.finditer(r"<path\b([^>]*)/>", inner):
+        attrs = m.group(1)
+        row = reference_path_bbox(attrs)
+        if row:
+            key, bbox = row
+            by_region[key].append(bbox)
+    out: dict[str, tuple[float, float, float, float]] = {}
+    for k, lst in by_region.items():
+        if lst:
+            out[k] = union_bboxes(lst)
+    return out
+
+
+def reference_chroma_inner(text: str, start: int) -> str:
     pos = text.find(">", start) + 1
     depth = 1
     i = pos
@@ -187,43 +218,39 @@ def parse_reference_region_bboxes(ref_path: Path) -> dict[str, tuple[float, floa
             i += 4
             continue
         i += 1
-    inner = text[pos : i - 4]
-    by_region: dict[str, list[tuple[float, float, float, float]]] = defaultdict(list)
-    for m in re.finditer(r"<rect\b([^>]*)/>", inner):
-        attrs = m.group(1)
-        if "mh-boro-chroma" not in attrs or "data-region=" not in attrs:
-            continue
-        rm = re.search(r'data-region="([^"]+)"', attrs)
-        if not rm:
-            continue
-        key = rm.group(1)
-        try:
-            xm = re.search(r'\bx="([^"]+)"', attrs)
-            ym = re.search(r'\by="([^"]+)"', attrs)
-            wm = re.search(r'\bwidth="([^"]+)"', attrs)
-            hm = re.search(r'\bheight="([^"]+)"', attrs)
-            if not all([xm, ym, wm, hm]):
-                continue
-            x, y, w, h = float(xm.group(1)), float(ym.group(1)), float(wm.group(1)), float(hm.group(1))
-        except ValueError:
-            continue
-        by_region[key].append((x, y, x + w, y + h))
-    for m in re.finditer(r"<path\b([^>]*)/>", inner):
-        attrs = m.group(1)
-        if "mh-boro-chroma" not in attrs or "data-region=" not in attrs:
-            continue
-        rm = re.search(r'data-region="([^"]+)"', attrs)
-        dm = re.search(r'd="([^"]+)"', attrs)
-        if not rm or not dm:
-            continue
-        key = rm.group(1)
-        bb = path_bbox(dm.group(1))
-        by_region[key].append(bb)
-    out: dict[str, tuple[float, float, float, float]] = {}
-    for k, lst in by_region.items():
-        if lst:
-            out[k] = union_bboxes(lst)
-    return out
+    return text[pos : i - 4]
+
+
+def reference_region_key(attrs: str) -> str | None:
+    if "mh-boro-chroma" not in attrs or "data-region=" not in attrs:
+        return None
+    match = re.search(r'data-region="([^"]+)"', attrs)
+    return match.group(1) if match else None
+
+
+def reference_rect_bbox(attrs: str) -> tuple[str, tuple[float, float, float, float]] | None:
+    key = reference_region_key(attrs)
+    if not key:
+        return None
+    try:
+        xm = re.search(r'\bx="([^"]+)"', attrs)
+        ym = re.search(r'\by="([^"]+)"', attrs)
+        wm = re.search(r'\bwidth="([^"]+)"', attrs)
+        hm = re.search(r'\bheight="([^"]+)"', attrs)
+        if not all([xm, ym, wm, hm]):
+            return None
+        x, y, w, h = float(xm.group(1)), float(ym.group(1)), float(wm.group(1)), float(hm.group(1))
+    except ValueError:
+        return None
+    return key, (x, y, x + w, y + h)
+
+
+def reference_path_bbox(attrs: str) -> tuple[str, tuple[float, float, float, float]] | None:
+    key = reference_region_key(attrs)
+    dm = re.search(r'd="([^"]+)"', attrs)
+    if not key or not dm:
+        return None
+    return key, path_bbox(dm.group(1))
 
 
 def load_ref_bboxes(json_path: Path, svg_path: Path | None) -> dict[str, tuple[float, float, float, float]]:
@@ -344,7 +371,7 @@ def decorative_target_center(
     return (284.5, 900.0)
 
 
-def main() -> None:
+def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Build manhattan-browse-map.svg from piece SVGs.")
     ap.add_argument(
         "--pieces-dir",
@@ -371,23 +398,16 @@ def main() -> None:
         default=None,
         help='Optional JSON: {"WH":{"dx":0,"dy":0},"CP":{"cx":280,"cy":900}}',
     )
-    args = ap.parse_args()
+    return ap.parse_args()
 
-    pieces_dir: Path = args.pieces_dir.expanduser().resolve()
-    if not pieces_dir.is_dir():
-        raise SystemExit(f"not a directory: {pieces_dir}")
 
-    if not args.ref_bboxes.is_file():
-        raise SystemExit(f"missing --ref-bboxes file: {args.ref_bboxes}")
-    ref_bbs = load_ref_bboxes(args.ref_bboxes, args.merge_reference_svg)
-    layout: dict = {}
-    if args.layout and args.layout.is_file():
-        layout = json.loads(args.layout.read_text(encoding="utf-8"))
+def load_layout(path: Path | None) -> dict:
+    if path and path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
 
-    svg_files = sorted(pieces_dir.glob("*.svg"), key=lambda p: p.name.lower())
-    if not svg_files:
-        raise SystemExit(f"no .svg files in {pieces_dir}")
 
+def group_piece_files(svg_files: list[Path]) -> dict[str | None, list[Path]]:
     groups: dict[str | None, list[Path]] = defaultdict(list)
     unknown: list[Path] = []
     for p in svg_files:
@@ -396,101 +416,118 @@ def main() -> None:
             unknown.append(p)
             continue
         groups[PIECE_TO_REGION[stem]].append(p)
-
     if unknown:
         print(
             "Warning: no PIECE_TO_REGION entry for stems (skipped):",
             ", ".join(x.stem for x in unknown),
             file=sys.stderr,
         )
+    return groups
 
-    chroma_parts: list[str] = []
-    label_parts: list[str] = []
 
-    for region_key, paths in sorted(groups.items(), key=lambda x: (x[0] is None, str(x[0]))):
-        if region_key is None:
-            for p in paths:
-                chroma_elts, lab_elts = collect_piece_layers(p)
-                if not chroma_elts:
-                    print(f"Warning: no chroma shapes in decorative {p.name}", file=sys.stderr)
-                ub = union_bboxes([b for e in chroma_elts if (b := element_bbox(e))]) if chroma_elts else (
-                    0.0,
-                    0.0,
-                    1.0,
-                    1.0,
-                )
-                tcx, tcy = decorative_target_center(p.stem, layout, ref_bbs)
-                pcx, pcy = bbox_center(ub)
-                tx, ty = tcx - pcx, tcy - pcy
-                ndx, ndy = layout_nudge(p.stem, layout)
-                tx, ty = tx + ndx, ty + ndy
-                trans = f"translate({tx:.4f} {ty:.4f})"
-                for el in chroma_elts:
-                    c = clone_for_output(el)
-                    set_chroma_attrs(c, None)
-                    prev = c.get("transform")
-                    c.set("transform", f"{trans} {prev}".strip() if prev else trans)
-                    chroma_parts.append(format_element(c))
-                for el in lab_elts:
-                    c = clone_for_output(el)
-                    prev = c.get("transform")
-                    c.set("transform", f"{trans} {prev}".strip() if prev else trans)
-                    label_parts.append(format_element(c))
+def chroma_union_bbox(chroma_elts: list[ET.Element]) -> tuple[float, float, float, float]:
+    if not chroma_elts:
+        return (0.0, 0.0, 1.0, 1.0)
+    bbs = [b for e in chroma_elts if (b := element_bbox(e))]
+    return union_bboxes(bbs) if bbs else (0.0, 0.0, 1.0, 1.0)
+
+
+def translated_transform(tx: float, ty: float) -> str:
+    return f"translate({tx:.4f} {ty:.4f})"
+
+
+def append_transformed(
+    out: list[str],
+    elements: list[ET.Element],
+    transform: str,
+    region_key: str | None = None,
+    chroma: bool = False,
+) -> None:
+    for el in elements:
+        c = clone_for_output(el)
+        if chroma:
+            set_chroma_attrs(c, region_key)
+        prev = c.get("transform")
+        c.set("transform", f"{transform} {prev}".strip() if prev else transform)
+        out.append(format_element(c))
+
+
+def process_decorative_paths(
+    paths: list[Path],
+    layout: dict,
+    ref_bbs: dict[str, tuple[float, float, float, float]],
+    chroma_parts: list[str],
+    label_parts: list[str],
+) -> None:
+    for p in paths:
+        chroma_elts, lab_elts = collect_piece_layers(p)
+        if not chroma_elts:
+            print(f"Warning: no chroma shapes in decorative {p.name}", file=sys.stderr)
+        ub = chroma_union_bbox(chroma_elts)
+        tcx, tcy = decorative_target_center(p.stem, layout, ref_bbs)
+        pcx, pcy = bbox_center(ub)
+        ndx, ndy = layout_nudge(p.stem, layout)
+        transform = translated_transform(tcx - pcx + ndx, tcy - pcy + ndy)
+        append_transformed(chroma_parts, chroma_elts, transform, None, chroma=True)
+        append_transformed(label_parts, lab_elts, transform)
+
+
+def region_reference_bbox(region_key: str, ref_bbs: dict[str, tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
+    ref_bb = ref_bbs.get(region_key)
+    if ref_bb:
+        return ref_bb
+    print(
+        f"Warning: no reference bbox for region {region_key!r} — using placeholder.",
+        file=sys.stderr,
+    )
+    return (0.0, 0.0, 50.0, 50.0)
+
+
+def collect_region_chroma(paths: list[Path]) -> tuple[list[tuple[float, float, float, float]], list[list[ET.Element]]]:
+    piece_bbs: list[tuple[float, float, float, float]] = []
+    file_chroma: list[list[ET.Element]] = []
+    for p in paths:
+        chroma_elts, _ = collect_piece_layers(p)
+        if not chroma_elts:
+            print(f"Warning: no chroma shapes in {p.name}", file=sys.stderr)
+            piece_bbs.append((0.0, 0.0, 1.0, 1.0))
+            file_chroma.append([])
             continue
+        piece_bbs.append(chroma_union_bbox(chroma_elts))
+        file_chroma.append(chroma_elts)
+    return piece_bbs, file_chroma
 
-        ref_bb = ref_bbs.get(region_key)
-        if not ref_bb:
-            print(
-                f"Warning: no reference bbox for region {region_key!r} — using placeholder.",
-                file=sys.stderr,
-            )
-            ref_bb = (0.0, 0.0, 50.0, 50.0)
 
-        piece_bbs: list[tuple[float, float, float, float]] = []
-        file_chroma: list[list[ET.Element]] = []
-        for p in paths:
-            chroma_elts, _ = collect_piece_layers(p)
-            if not chroma_elts:
-                print(f"Warning: no chroma shapes in {p.name}", file=sys.stderr)
-                piece_bbs.append((0.0, 0.0, 1.0, 1.0))
-                file_chroma.append([])
-                continue
-            bbs = [b for e in chroma_elts if (b := element_bbox(e))]
-            piece_bbs.append(union_bboxes(bbs) if bbs else (0.0, 0.0, 1.0, 1.0))
-            file_chroma.append(chroma_elts)
+def process_region_paths(
+    region_key: str,
+    paths: list[Path],
+    layout: dict,
+    ref_bbs: dict[str, tuple[float, float, float, float]],
+    chroma_parts: list[str],
+    label_parts: list[str],
+) -> None:
+    ref_bb = region_reference_bbox(region_key, ref_bbs)
+    piece_bbs, file_chroma = collect_region_chroma(paths)
+    targets = target_centers_for_region(ref_bb, len(paths), piece_bbs)
 
-        targets = target_centers_for_region(ref_bb, len(paths), piece_bbs)
+    for idx, p in enumerate(paths):
+        pcx, pcy = bbox_center(piece_bbs[idx])
+        tcx, tcy = targets[idx]
+        ndx, ndy = layout_nudge(p.stem, layout)
+        transform = translated_transform(tcx - pcx + ndx, tcy - pcy + ndy)
+        append_transformed(chroma_parts, file_chroma[idx], transform, region_key, chroma=True)
+        _, lab_elts = collect_piece_layers(p)
+        append_transformed(label_parts, lab_elts, transform)
 
-        for idx, p in enumerate(paths):
-            ub = piece_bbs[idx]
-            tcx, tcy = targets[idx]
-            pcx, pcy = bbox_center(ub)
-            tx, ty = tcx - pcx, tcy - pcy
-            ndx, ndy = layout_nudge(p.stem, layout)
-            tx, ty = tx + ndx, ty + ndy
-            trans = f"translate({tx:.4f} {ty:.4f})"
-            for el in file_chroma[idx]:
-                c = clone_for_output(el)
-                set_chroma_attrs(c, region_key)
-                prev = c.get("transform")
-                c.set("transform", f"{trans} {prev}".strip() if prev else trans)
-                chroma_parts.append(format_element(c))
 
-            _, lab_elts = collect_piece_layers(p)
-            for el in lab_elts:
-                c = clone_for_output(el)
-                prev = c.get("transform")
-                c.set("transform", f"{trans} {prev}".strip() if prev else trans)
-                label_parts.append(format_element(c))
-
+def build_output_svg(chroma_parts: list[str], label_parts: list[str]) -> str:
     chroma_inner = "".join(chroma_parts)
     labels_block = (
         f'<g class="mh-map-labels" pointer-events="none" aria-hidden="true">{"".join(label_parts)}</g>'
         if label_parts
         else ""
     )
-
-    out_svg = (
+    return (
         '<svg width="569" height="1491" viewBox="0 0 569 1491" fill="none" '
         'xmlns="http://www.w3.org/2000/svg">\n'
         '<rect width="569" height="1491" fill="#F5E9DC" class="mh-map-bg" pointer-events="none"/>'
@@ -499,8 +536,34 @@ def main() -> None:
         "</svg>\n"
     )
 
+
+def main() -> None:
+    args = parse_args()
+    pieces_dir: Path = args.pieces_dir.expanduser().resolve()
+    if not pieces_dir.is_dir():
+        raise SystemExit(f"not a directory: {pieces_dir}")
+
+    if not args.ref_bboxes.is_file():
+        raise SystemExit(f"missing --ref-bboxes file: {args.ref_bboxes}")
+    ref_bbs = load_ref_bboxes(args.ref_bboxes, args.merge_reference_svg)
+    layout = load_layout(args.layout)
+
+    svg_files = sorted(pieces_dir.glob("*.svg"), key=lambda p: p.name.lower())
+    if not svg_files:
+        raise SystemExit(f"no .svg files in {pieces_dir}")
+
+    groups = group_piece_files(svg_files)
+    chroma_parts: list[str] = []
+    label_parts: list[str] = []
+
+    for region_key, paths in sorted(groups.items(), key=lambda x: (x[0] is None, str(x[0]))):
+        if region_key is None:
+            process_decorative_paths(paths, layout, ref_bbs, chroma_parts, label_parts)
+            continue
+        process_region_paths(region_key, paths, layout, ref_bbs, chroma_parts, label_parts)
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(out_svg, encoding="utf-8")
+    args.out.write_text(build_output_svg(chroma_parts, label_parts), encoding="utf-8")
     print(f"wrote {args.out} ({len(chroma_parts)} chroma elements, {len(label_parts)} label elements)")
 
 

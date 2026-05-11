@@ -2,7 +2,7 @@
  * Per-user favorited hunts (`users/{uid}/favoritedHunts/{challengeId}`).
  */
 
-import { auth, db } from "../firebase-init.js";
+import { auth, db } from "./firebase.js";
 import {
   collection,
   deleteDoc,

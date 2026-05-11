@@ -48,20 +48,24 @@ function tsToIso(ts) {
 
 /** runPhotos/.../votes: { vote, mood } per user — same model as client run-social.js */
 function aggregateReactionVotes(voteDocs) {
-  let up = 0;
-  let down = 0;
-  let moodLaugh = 0;
-  let moodCry = 0;
-  let moodAwkward = 0;
+  const counts = { up: 0, down: 0, moodLaugh: 0, moodCry: 0, moodAwkward: 0 };
   for (const vd of voteDocs) {
     const data = vd.data() || {};
-    if (data.vote === "up") up += 1;
-    else if (data.vote === "down") down += 1;
-    if (data.mood === "laugh") moodLaugh += 1;
-    else if (data.mood === "cry") moodCry += 1;
-    else if (data.mood === "awkward") moodAwkward += 1;
+    addReactionVote(counts, data);
+    addReactionMood(counts, data);
   }
-  return { up, down, moodLaugh, moodCry, moodAwkward };
+  return counts;
+}
+
+function addReactionVote(counts, data) {
+  if (data.vote === "up") counts.up += 1;
+  else if (data.vote === "down") counts.down += 1;
+}
+
+function addReactionMood(counts, data) {
+  if (data.mood === "laugh") counts.moodLaugh += 1;
+  else if (data.mood === "cry") counts.moodCry += 1;
+  else if (data.mood === "awkward") counts.moodAwkward += 1;
 }
 
 const FieldPath = admin.firestore.FieldPath;
@@ -150,28 +154,39 @@ async function deleteUserCascade(db, bucket, authSvc, uid) {
     throw new HttpsError("invalid-argument", "Invalid uid.");
   }
 
+  await deleteUserHandleIfOwned(db, uid);
+  await deleteUserAttempts(db, bucket, uid);
+  await deleteUserRunPhotos(db, bucket, uid);
+  await db.collection("users").doc(uid).delete();
+  await deleteAuthUserIfPresent(authSvc, uid);
+}
+
+async function deleteUserHandleIfOwned(db, uid) {
   const userSnap = await db.collection("users").doc(uid).get();
   const usernameNorm = userSnap.exists ? userSnap.data().usernameNorm : null;
-  if (usernameNorm) {
-    const hr = db.collection("userHandles").doc(String(usernameNorm));
-    const hs = await hr.get();
-    if (hs.exists && hs.data().uid === uid) {
-      await hr.delete();
-    }
+  if (!usernameNorm) return;
+  const hr = db.collection("userHandles").doc(String(usernameNorm));
+  const hs = await hr.get();
+  if (hs.exists && hs.data().uid === uid) {
+    await hr.delete();
   }
+}
 
+async function deleteUserAttempts(db, bucket, uid) {
   const attempts = await db.collection("attempts").where("userId", "==", uid).get();
   for (const ad of attempts.docs) {
     await deleteAttemptCascade(db, bucket, ad.id);
   }
+}
 
+async function deleteUserRunPhotos(db, bucket, uid) {
   const photos = await db.collection("runPhotos").where("userId", "==", uid).get();
   for (const pd of photos.docs) {
     await deleteRunPhotoDeep(db, bucket, pd.id);
   }
+}
 
-  await db.collection("users").doc(uid).delete();
-
+async function deleteAuthUserIfPresent(authSvc, uid) {
   try {
     await authSvc.deleteUser(uid);
   } catch (e) {
@@ -253,130 +268,123 @@ async function listRunPhotosForChallenge(db, challengeId) {
   return { photos };
 }
 
+const ADMIN_ACTIONS = {
+  async listRunPhotosForChallenge({ db, payload }) {
+    return listRunPhotosForChallenge(db, requiredString(payload, "challengeId"));
+  },
+  async deleteUser({ db, bucket, authSvc, payload }) {
+    await deleteUserCascade(db, bucket, authSvc, payload?.uid);
+    return { ok: true };
+  },
+  async deleteChallenge({ db, bucket, payload }) {
+    await deleteChallengeCascade(db, bucket, requiredString(payload, "challengeId"));
+    return { ok: true };
+  },
+  async deleteAttempt({ db, bucket, payload }) {
+    await deleteAttemptCascade(db, bucket, requiredString(payload, "attemptId"));
+    return { ok: true };
+  },
+  async deleteRunPhoto({ db, bucket, payload }) {
+    await deleteRunPhotoDeep(db, bucket, requiredString(payload, "photoId"));
+    return { ok: true };
+  },
+  async deleteComment({ db, payload }) {
+    await deleteCommentOnly(
+      db,
+      requiredString(payload, "photoId"),
+      requiredString(payload, "commentId"),
+    );
+    return { ok: true };
+  },
+  async postAdminComment({ db, payload }) {
+    await postAdminComment(db, payload);
+    return { ok: true };
+  },
+  async setUserMeritPoints({ db, payload }) {
+    await setUserMeritPoints(db, payload);
+    return { ok: true };
+  },
+};
+
+function requiredString(payload, key) {
+  const value = payload?.[key];
+  if (typeof value !== "string" || !value) {
+    throw new HttpsError("invalid-argument", `${key} required.`);
+  }
+  return value;
+}
+
+async function postAdminComment(db, payload) {
+  const photoId = requiredString(payload, "photoId");
+  const text = typeof payload?.text === "string" ? payload.text.trim() : "";
+  const parentCommentId =
+    typeof payload?.parentCommentId === "string" && payload.parentCommentId
+      ? payload.parentCommentId
+      : null;
+  if (text.length < 1 || text.length > 500) {
+    throw new HttpsError("invalid-argument", "Comment must be 1–500 characters.");
+  }
+  const pref = db.collection("runPhotos").doc(photoId);
+  const ps = await pref.get();
+  if (!ps.exists) {
+    throw new HttpsError("not-found", "Photo not found.");
+  }
+  await pref.collection("comments").add({
+    userId: ADMIN_STAFF_UID,
+    authorName: ADMIN_DISPLAY_NAME,
+    text,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...(parentCommentId ? { parentCommentId } : {}),
+  });
+}
+
+async function setUserMeritPoints(db, payload) {
+  const uid = requiredString(payload, "uid");
+  const meritPoints = payload?.meritPoints;
+  if (typeof meritPoints !== "number" || !Number.isFinite(meritPoints) || meritPoints < 0) {
+    throw new HttpsError("invalid-argument", "meritPoints must be a non-negative number.");
+  }
+  await db.collection("users").doc(uid).set(
+    {
+      meritPoints: Math.floor(meritPoints),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
 function buildAdminPortal(adminPasswordSecret) {
   return onCall(
     { region: "us-central1", secrets: [adminPasswordSecret] },
-    async (request) => {
-      assertPassword(request.data, adminPasswordSecret.value());
-      const { action, payload } = request.data || {};
-      if (typeof action !== "string") {
-        throw new HttpsError("invalid-argument", "Missing action.");
-      }
-
-      const db = admin.firestore();
-      const bucket = admin.storage().bucket();
-      const authSvc = admin.auth();
-
-      try {
-        switch (action) {
-          case "listRunPhotosForChallenge": {
-            const challengeId = payload?.challengeId;
-            if (typeof challengeId !== "string" || !challengeId) {
-              throw new HttpsError("invalid-argument", "challengeId required.");
-            }
-            return await listRunPhotosForChallenge(db, challengeId);
-          }
-
-          case "deleteUser": {
-            const uid = payload?.uid;
-            await deleteUserCascade(db, bucket, authSvc, uid);
-            return { ok: true };
-          }
-
-          case "deleteChallenge": {
-            const challengeId = payload?.challengeId;
-            if (typeof challengeId !== "string" || !challengeId) {
-              throw new HttpsError("invalid-argument", "challengeId required.");
-            }
-            await deleteChallengeCascade(db, bucket, challengeId);
-            return { ok: true };
-          }
-
-          case "deleteAttempt": {
-            const attemptId = payload?.attemptId;
-            if (typeof attemptId !== "string" || !attemptId) {
-              throw new HttpsError("invalid-argument", "attemptId required.");
-            }
-            await deleteAttemptCascade(db, bucket, attemptId);
-            return { ok: true };
-          }
-
-          case "deleteRunPhoto": {
-            const photoId = payload?.photoId;
-            if (typeof photoId !== "string" || !photoId) {
-              throw new HttpsError("invalid-argument", "photoId required.");
-            }
-            await deleteRunPhotoDeep(db, bucket, photoId);
-            return { ok: true };
-          }
-
-          case "deleteComment": {
-            const photoId = payload?.photoId;
-            const commentId = payload?.commentId;
-            if (typeof photoId !== "string" || typeof commentId !== "string") {
-              throw new HttpsError("invalid-argument", "photoId and commentId required.");
-            }
-            await deleteCommentOnly(db, photoId, commentId);
-            return { ok: true };
-          }
-
-          case "postAdminComment": {
-            const photoId = payload?.photoId;
-            const text = typeof payload?.text === "string" ? payload.text.trim() : "";
-            const parentCommentId =
-              typeof payload?.parentCommentId === "string" && payload.parentCommentId
-                ? payload.parentCommentId
-                : null;
-            if (typeof photoId !== "string" || !photoId) {
-              throw new HttpsError("invalid-argument", "photoId required.");
-            }
-            if (text.length < 1 || text.length > 500) {
-              throw new HttpsError("invalid-argument", "Comment must be 1–500 characters.");
-            }
-            const pref = db.collection("runPhotos").doc(photoId);
-            const ps = await pref.get();
-            if (!ps.exists) {
-              throw new HttpsError("not-found", "Photo not found.");
-            }
-            await pref.collection("comments").add({
-              userId: ADMIN_STAFF_UID,
-              authorName: ADMIN_DISPLAY_NAME,
-              text,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              ...(parentCommentId ? { parentCommentId } : {}),
-            });
-            return { ok: true };
-          }
-
-          case "setUserMeritPoints": {
-            const uid = payload?.uid;
-            const meritPoints = payload?.meritPoints;
-            if (typeof uid !== "string" || !uid) {
-              throw new HttpsError("invalid-argument", "uid required.");
-            }
-            if (typeof meritPoints !== "number" || !Number.isFinite(meritPoints) || meritPoints < 0) {
-              throw new HttpsError("invalid-argument", "meritPoints must be a non-negative number.");
-            }
-            await db.collection("users").doc(uid).set(
-              {
-                meritPoints: Math.floor(meritPoints),
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              },
-              { merge: true },
-            );
-            return { ok: true };
-          }
-
-          default:
-            throw new HttpsError("invalid-argument", `Unknown action: ${action}`);
-        }
-      } catch (e) {
-        if (e instanceof HttpsError) throw e;
-        console.error("[adminPortal]", action, e);
-        throw new HttpsError("internal", e.message || "Admin operation failed.");
-      }
-    },
+    (request) => handleAdminPortalRequest(request, adminPasswordSecret),
   );
+}
+
+async function handleAdminPortalRequest(request, adminPasswordSecret) {
+  assertPassword(request.data, adminPasswordSecret.value());
+  const { action, payload } = request.data || {};
+  if (typeof action !== "string") {
+    throw new HttpsError("invalid-argument", "Missing action.");
+  }
+
+  const handler = ADMIN_ACTIONS[action];
+  if (!handler) {
+    throw new HttpsError("invalid-argument", `Unknown action: ${action}`);
+  }
+
+  try {
+    return await handler({
+      action,
+      authSvc: admin.auth(),
+      bucket: admin.storage().bucket(),
+      db: admin.firestore(),
+      payload,
+    });
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    console.error("[adminPortal]", action, e);
+    throw new HttpsError("internal", e.message || "Admin operation failed.");
+  }
 }
 
 module.exports = { buildAdminPortal };

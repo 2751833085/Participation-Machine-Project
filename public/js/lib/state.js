@@ -53,7 +53,15 @@ export function setThemePreference(mode) {
 }
 
 export function syncThemeFromStorage() {
-  document.documentElement.dataset.theme = effectiveTheme();
+  const t = effectiveTheme();
+  document.documentElement.dataset.theme = t;
+  document.documentElement.classList.toggle("dark", t === "dark");
+  document.documentElement.classList.toggle("light", t === "light");
+  document.documentElement.style.colorScheme = t === "dark" ? "dark" : "light";
+  const csMeta = document.querySelector('meta[name="color-scheme"]');
+  if (csMeta) {
+    csMeta.setAttribute("content", t === "dark" ? "dark light" : "light dark");
+  }
 }
 
 let systemThemeListenerBound = false;

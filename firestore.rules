@@ -50,10 +50,6 @@ service cloud.firestore {
         && resource.data.createdBy == request.auth.uid;
     }
 
-    /**
-     * Attempt reads are open so the in-app admin dashboard (#/admin) can list activity.
-     * Production: restrict to Cloud Functions or custom claims instead of public reads.
-     */
     match /attempts/{attemptId} {
       allow read: if true;
       allow create: if request.auth != null
@@ -73,7 +69,6 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
 
-      /** Saved hunts for the Favorited tab — one doc per challenge id. */
       match /favoritedHunts/{challengeId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow create: if request.auth != null
@@ -89,7 +84,6 @@ service cloud.firestore {
       }
     }
 
-    /** One doc per normalized username; uid owner. Used for unique display names. */
     match /userHandles/{handleId} {
       allow read: if true;
       allow create: if request.auth != null
@@ -102,7 +96,6 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    /** In-run player photos for a challenge (visible to signed-in users). */
     match /runPhotos/{photoId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
@@ -174,6 +167,127 @@ service cloud.firestore {
             && request.resource.data.mood in ['laugh', 'cry', 'awkward', ''];
           allow delete: if request.auth != null && voteUid == request.auth.uid;
         }
+      }
+    }
+
+    /**
+     * Tourgo Friends · v5 — friend code index.
+     * Owner publishes their code → uid + name so others can search.
+     */
+    match /hideSeekFriendIndex/{friendCode} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.friendCode == friendCode
+        && friendCode.matches('^[A-Z0-9]{4,8}$');
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    /**
+     * Tourgo Friends · v5 — friend requests.
+     * requestId convention: "{fromUid}_{toUid}". Sender creates pending,
+     * recipient flips to accepted/rejected. On accept, both sides write
+     * reciprocal docs in their /hideSeekFriends/{me}/friends/{other} list.
+     */
+    match /hideSeekFriendRequests/{reqId} {
+      allow read: if request.auth != null
+        && resource != null
+        && (request.auth.uid == resource.data.fromUid
+          || request.auth.uid == resource.data.toUid);
+      allow create: if request.auth != null
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.toUid is string
+        && request.resource.data.toUid != request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.toUid
+        && request.resource.data.fromUid == resource.data.fromUid
+        && request.resource.data.toUid == resource.data.toUid
+        && request.resource.data.status in ['accepted', 'rejected'];
+      allow delete: if request.auth != null
+        && (request.auth.uid == resource.data.fromUid
+          || request.auth.uid == resource.data.toUid);
+    }
+
+    /**
+     * Tourgo Friends · v5 — accepted friend connections (per-user list).
+     */
+    match /hideSeekFriends/{ownerUid}/friends/{otherUid} {
+      allow read: if request.auth != null && request.auth.uid == ownerUid;
+      allow create, update: if request.auth != null
+        && (request.auth.uid == ownerUid || request.auth.uid == otherUid)
+        && request.resource.data.uid == otherUid;
+      allow delete: if request.auth != null && request.auth.uid == ownerUid;
+    }
+
+    /**
+     * Tourgo Friends · v5 — manhunt rooms.
+     * Permissive but auth-gated rules. Hosts and members manage room state
+     * collaboratively. Captures locked to the hunt phase.
+     */
+    match /hideSeekRooms/{roomCode} {
+      function inRoom() {
+        return exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(request.auth.uid));
+      }
+      function isHost() {
+        return request.auth != null
+          && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode))
+          && get(/databases/$(database)/documents/hideSeekRooms/$(roomCode)).data.hostUid == request.auth.uid;
+      }
+
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && roomCode is string
+        && roomCode.matches('^[A-Z0-9]{4,8}$')
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.status == 'lobby';
+      allow update: if request.auth != null && inRoom();
+      allow delete: if request.auth != null
+        && resource.data.hostUid == request.auth.uid;
+
+      match /members/{memberUid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.auth.uid == memberUid
+          && request.resource.data.uid == memberUid;
+        allow update: if request.auth != null
+          && (request.auth.uid == memberUid
+            || isHost()
+            || (
+              // Allow other members to mark you captured (Hunter capturing Runner)
+              request.resource.data.uid == resource.data.uid
+              && request.resource.data.name == resource.data.name
+              && request.resource.data.qrToken == resource.data.qrToken
+              && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(request.auth.uid))
+            )
+          );
+        allow delete: if request.auth != null
+          && (request.auth.uid == memberUid || isHost());
+      }
+
+      match /captures/{targetUid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.resource.data.captorUid == request.auth.uid
+          && request.resource.data.targetUid == targetUid
+          && request.resource.data.targetUid != request.auth.uid
+          && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(request.auth.uid))
+          && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(targetUid))
+          && get(/databases/$(database)/documents/hideSeekRooms/$(roomCode)).data.status in ['hunt', 'stalemate'];
+        allow update, delete: if false;
+      }
+
+      match /chats/{messageId} {
+        allow read: if request.auth != null
+          && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(request.auth.uid));
+        allow create: if request.auth != null
+          && exists(/databases/$(database)/documents/hideSeekRooms/$(roomCode)/members/$(request.auth.uid))
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.scope in ['all', 'hunters', 'runners'];
+        allow update, delete: if false;
       }
     }
   }

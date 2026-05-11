@@ -1,42 +1,76 @@
 /**
- * Login — Google via popup (desktop) or full-page redirect (iOS / WebKit).
- * Welcome flow: 4-page carousel (features → beta notice → sign-in).
+ * Login — two-view flow aligned with Claude Design UI kit.
+ *
+ *   View 1 (welcome): hero image + serif italic title + "Begin the tour"
+ *   View 2 (signin):  back button + "Welcome back." + email / password form
+ *                     + Continue with Google + Continue as guest
+ *
+ * Registration is intentionally NOT available — accounts are provisioned by an
+ * admin in the Firebase console.
  */
 
-import { auth } from "../firebase-init.js";
-import { renderShell } from "../components/shell.js";
-import { escapeHtml } from "../lib/utils.js";
-import { nav } from "../lib/router.js";
-import { setGuestSession } from "../lib/state.js";
-import {
-  afterAuthSuccess,
-  consumeAuthRedirectError,
-  prefersGoogleAuthRedirect,
-  signInWithGoogle,
-} from "../services/auth.js";
-import {
-  getAppLanguage,
-  getLanguageNativeName,
-  getSupportedLanguages,
-  setAppLanguage,
-  t,
-} from "../lib/i18n.js";
-import { openLanguagePickerModal } from "../components/modal.js";
+
+import { escapeHtml } from "./page-html.js";
+import { renderAppShell } from "./page-shell.js";
+const FIREBASE_PATH = "../firebase-init.js";
+const ROUTER_PATH = "../lib/router.js";
+const STATE_PATH = "../lib/state.js";
+const AUTH_SERVICE_PATH = "../services/auth.js";
+
+let auth;
+let nav;
+let setGuestSession;
+let afterAuthSuccess;
+let consumeAuthRedirectError;
+let prefersGoogleAuthRedirect;
+let signInWithEmail;
+let signInWithGoogle;
+let loginDepsPromise;
+
+async function loadLoginDeps() {
+  if (!loginDepsPromise) {
+    loginDepsPromise = Promise.all([
+      import(FIREBASE_PATH),
+      import(ROUTER_PATH),
+      import(STATE_PATH),
+      import(AUTH_SERVICE_PATH),
+    ]).then(([firebase, router, state, authService]) => {
+      auth = firebase.auth;
+      nav = router.nav;
+      setGuestSession = state.setGuestSession;
+      afterAuthSuccess = authService.afterAuthSuccess;
+      consumeAuthRedirectError = authService.consumeAuthRedirectError;
+      prefersGoogleAuthRedirect = authService.prefersGoogleAuthRedirect;
+      signInWithEmail = authService.signInWithEmail;
+      signInWithGoogle = authService.signInWithGoogle;
+    });
+  }
+  return loginDepsPromise;
+}
 
 const ERR = {
   "auth/unauthorized-domain":
     "This domain is not allowed for sign-in. Add it under Firebase Authentication → Settings → Authorized domains.",
-  "auth/operation-not-allowed": "Google sign-in is disabled for this project.",
+  "auth/operation-not-allowed": "This sign-in method is disabled for this project.",
   "auth/network-request-failed":
-    "Network error while contacting Google. Check your connection or VPN.",
+    "Network error. Check your connection or VPN and try again.",
   "auth/popup-blocked":
     "The browser blocked the sign-in window. Allow pop-ups for this site and try again.",
   "auth/cancelled-popup-request":
     "Sign-in was cancelled or another sign-in is already in progress.",
   "auth/internal-error":
-    "Sign-in failed (Firebase / Google Cloud setup). Try another browser; check API key restrictions and App Check if needed.",
+    "Sign-in failed (Firebase / Google Cloud setup). Try another browser.",
   "auth/popup-closed-by-user":
     "The sign-in window was closed. Try again and complete the Google prompt.",
+  "auth/invalid-credential":
+    "Wrong email or password.",
+  "auth/invalid-email": "That email address isn’t valid.",
+  "auth/user-disabled": "This account is disabled. Contact an admin.",
+  "auth/user-not-found":
+    "No account found for that email. Accounts are provisioned by an admin.",
+  "auth/wrong-password": "Wrong password for that account.",
+  "auth/too-many-requests":
+    "Too many attempts. Wait a minute before trying again.",
 };
 
 function signInErrorMessage(e) {
@@ -46,284 +80,128 @@ function signInErrorMessage(e) {
   return ERR[e?.code] || e?.message || "Sign-in failed.";
 }
 
-const ICON_MAP = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`;
-const ICON_CAMERA = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
-const ICON_CLOCK = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`;
-const ICON_USER = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>`;
-const ICON_BETA = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const ICON_GOOGLE = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9c-.3 1.4-1 2.5-2.2 3.3v2.8h3.6c2.1-1.9 3.2-4.8 3.2-8.1z" fill="#4285F4"/><path d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.8c-1 .7-2.3 1.1-3.7 1.1-2.8 0-5.2-1.9-6-4.4H2.3v2.9C4.1 20.8 7.8 23 12 23z" fill="#34A853"/><path d="M6 14.3c-.2-.7-.4-1.4-.4-2.3s.1-1.6.4-2.3V6.8H2.3C1.5 8.4 1 10.2 1 12s.5 3.6 1.3 5.2L6 14.3z" fill="#FBBC05"/><path d="M12 5.3c1.6 0 3 .5 4.1 1.6l3.1-3.1C17.4 2 14.9 1 12 1 7.8 1 4.1 3.2 2.3 6.8L6 9.7c.8-2.5 3.2-4.4 6-4.4z" fill="#EA4335"/></svg>`;
 
-const SLIDE_COUNT = 4;
-const SWIPE_THRESHOLD_PX = 48;
-/** Track is 400% wide; each slide is 25% of track (= one viewport). translate % is relative to the track. */
-const SLIDE_SHIFT_PCT = 100 / SLIDE_COUNT;
+const ICON_CHEVRON_LEFT = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
 
-let carouselAbort = null;
-
-function wireWelcomeCarousel(root) {
-  if (carouselAbort) carouselAbort.abort();
-  carouselAbort = new AbortController();
-  const { signal } = carouselAbort;
-
-  const viewport = root.querySelector(".welcome-carousel-viewport");
-  const track = root.querySelector(".welcome-carousel-track");
-  const dots = root.querySelectorAll(".welcome-carousel-dot");
-  const btnPrev = root.querySelector(".welcome-carousel-prev");
-  const btnNext = root.querySelector(".welcome-carousel-next");
-  const slides = root.querySelectorAll(".welcome-slide");
-
-  if (!viewport || !track || !slides.length) return;
-
-  let index = 0;
-  let touchStartX = null;
-  let touchStartY = null;
-  let touchLastX = null;
-  let touchLastY = null;
-
-  function syncUi() {
-    const pct = -index * SLIDE_SHIFT_PCT;
-    track.style.transform = `translate3d(${pct}%, 0, 0)`;
-    track.dataset.slide = String(index);
-
-    slides.forEach((el, i) => {
-      const on = i === index;
-      el.classList.toggle("is-active", on);
-      el.setAttribute("aria-hidden", on ? "false" : "true");
-      if ("inert" in el) el.inert = !on;
-    });
-
-    dots.forEach((dot, i) => {
-      const on = i === index;
-      dot.classList.toggle("is-active", on);
-      if (on) dot.setAttribute("aria-current", "true");
-      else dot.removeAttribute("aria-current");
-    });
-
-    if (btnPrev) {
-      if (index <= 0) {
-        btnPrev.setAttribute("hidden", "");
-        btnPrev.setAttribute("aria-hidden", "true");
-      } else {
-        btnPrev.removeAttribute("hidden");
-        btnPrev.removeAttribute("aria-hidden");
-      }
-    }
-    if (btnNext) {
-      const last = index >= SLIDE_COUNT - 1;
-      if (last) {
-        btnNext.setAttribute("hidden", "");
-        btnNext.setAttribute("aria-hidden", "true");
-      } else {
-        btnNext.removeAttribute("hidden");
-        btnNext.removeAttribute("aria-hidden");
-      }
-    }
-  }
-
-  function goTo(i) {
-    index = Math.max(0, Math.min(SLIDE_COUNT - 1, i));
-    syncUi();
-  }
-
-  function goNext() {
-    goTo(index + 1);
-  }
-
-  function goPrev() {
-    goTo(index - 1);
-  }
-
-  syncUi();
-
-  btnNext?.addEventListener("click", () => goNext(), { signal });
-  btnPrev?.addEventListener("click", () => goPrev(), { signal });
-
-  dots.forEach((dot, i) => {
-    dot.addEventListener("click", () => goTo(i), { signal });
-  });
-
-  viewport.addEventListener(
-    "touchstart",
-    (e) => {
-      if (e.touches.length !== 1) return;
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      touchLastX = touchStartX;
-      touchLastY = touchStartY;
-    },
-    { signal, passive: true },
-  );
-
-  viewport.addEventListener(
-    "touchmove",
-    (e) => {
-      if (touchStartX == null || e.touches.length !== 1) return;
-      touchLastX = e.touches[0].clientX;
-      touchLastY = e.touches[0].clientY;
-    },
-    { signal, passive: true },
-  );
-
-  function clearTouch() {
-    touchStartX = null;
-    touchStartY = null;
-    touchLastX = null;
-    touchLastY = null;
-  }
-
-  viewport.addEventListener(
-    "touchend",
-    (e) => {
-      if (touchStartX == null || touchStartY == null) {
-        clearTouch();
-        return;
-      }
-      const t = e.changedTouches[0];
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
-      clearTouch();
-      if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
-      if (Math.abs(dx) < Math.abs(dy) * 1.05) return;
-      if (dx <= -SWIPE_THRESHOLD_PX) goNext();
-      else if (dx >= SWIPE_THRESHOLD_PX) goPrev();
-    },
-    { signal, passive: true },
-  );
-
-  viewport.addEventListener("touchcancel", () => clearTouch(), {
-    signal,
-    passive: true,
-  });
-
-  root.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        goPrev();
-      }
-    },
-    { signal },
-  );
+function welcomeView() {
+  return `
+    <section class="login-view login-view--welcome" data-view="welcome" aria-labelledby="login-welcome-heading">
+      <div class="login-hero-image" aria-hidden="true">
+        <div class="login-hero-chip login-hero-chip--left">Est. NYC</div>
+        <div class="login-hero-chip login-hero-chip--right">40.7128° N</div>
+      </div>
+      <div class="login-content">
+        <p class="login-kicker">Tourgo · Photo hunts</p>
+        <h1 id="login-welcome-heading" class="login-title">
+          <span class="login-title-italic">The city,</span><br/>
+          <span class="login-title-plain">on a timer.</span>
+        </h1>
+        <p class="login-lead">
+          Timed photo scavenger hunts across Manhattan. Follow the clues, beat the clock, earn merits.
+        </p>
+        <div class="login-actions">
+          <button type="button" class="btn btn-primary btn-block" id="btn-begin">Begin the tour</button>
+          <button type="button" class="btn btn-secondary btn-block" id="btn-have-account" disabled>I already have an account</button>
+        </div>
+        <p class="login-signup-note">New account sign-up is currently unavailable.</p>
+        <p class="login-weather">Partly cloudy · 62°F · Manhattan</p>
+      </div>
+    </section>
+  `;
 }
 
-export function render() {
-  renderShell(
+function signinView() {
+  return `
+    <section class="login-view login-view--signin" data-view="signin" aria-labelledby="login-signin-heading" hidden>
+      <button type="button" class="login-back" id="btn-back" aria-label="Back">${ICON_CHEVRON_LEFT}</button>
+      <div class="login-content login-content--signin">
+        <p class="login-kicker login-kicker--tight">Sign in</p>
+        <h1 id="login-signin-heading" class="login-title">
+          <span class="login-title-italic">Welcome</span>
+          <span class="login-title-plain"> back.</span>
+        </h1>
+        <p class="login-lead">
+          Pick up a hunt where you left it. Your merits, your trail, your city.
+        </p>
+
+        <div id="login-status" class="login-status" aria-live="polite"></div>
+
+        <form class="login-form" id="login-form" novalidate>
+          <div class="login-field">
+            <label class="login-field-label" for="login-email">Email/Username</label>
+            <input
+              class="login-field-input"
+              id="login-email"
+              name="email"
+              type="text"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="email or username"
+              required
+            />
+          </div>
+          <div class="login-field">
+            <label class="login-field-label login-field-label--row" for="login-password">
+              <span>Password</span>
+            </label>
+            <div class="login-field-password">
+              <input
+                class="login-field-input"
+                id="login-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+              <button type="button" class="login-show-toggle" id="btn-show-pass" aria-label="Show password">show</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block login-submit" id="btn-signin">Sign in</button>
+        </form>
+
+        <div class="login-divider" role="separator"><span>or</span></div>
+
+        <button type="button" class="btn btn-secondary btn-block login-btn-google" id="btn-google">
+          <span class="login-btn-google-icon" aria-hidden="true">${ICON_GOOGLE}</span>
+          <span>Continue with Google</span>
+        </button>
+        <button type="button" class="btn btn-ghost btn-block" id="btn-guest">Continue as guest</button>
+
+        <p class="login-legal">
+          By continuing you agree to Google’s
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+          and
+          <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a>.
+        </p>
+      </div>
+    </section>
+  `;
+}
+
+function showView(name) {
+  const views = document.querySelectorAll(".login-view");
+  views.forEach((el) => {
+    const match = el.dataset.view === name;
+    if (match) {
+      el.removeAttribute("hidden");
+    } else {
+      el.setAttribute("hidden", "");
+    }
+  });
+}
+
+export async function render() {
+  await loadLoginDeps();
+  await renderAppShell(
     `
-    <div class="page-narrow auth-page welcome-page">
-      <div
-        class="welcome-carousel"
-        role="region"
-        aria-roledescription="carousel"
-        aria-label="Welcome to Tourgo"
-        tabindex="0"
-      >
-        <div class="welcome-carousel-viewport">
-          <div class="welcome-carousel-track" data-slide="0">
-            <div class="welcome-slide welcome-slide--intro" role="group" aria-roledescription="slide" aria-label="1 of 4" aria-hidden="false">
-              <div class="welcome-slide-inner">
-                <div class="welcome-slide-glow" aria-hidden="true"></div>
-                <header class="welcome-hero">
-                  <p class="welcome-kicker">Tourgo</p>
-                  <h1 class="h1 welcome-title">Welcome</h1>
-                  <p class="lead welcome-lead">Explore Manhattan with timed photo scavenger hunts—create routes, follow clues, and race the clock with friends.</p>
-                </header>
-                <ul class="welcome-features" role="list">
-                  <li class="welcome-feature">
-                    <span class="welcome-feature-icon">${ICON_MAP}</span>
-                    <div class="welcome-feature-body">
-                      <strong class="welcome-feature-title">Map-based hunts</strong>
-                      <p class="welcome-feature-text">Place checkpoints on the map, add hints, and publish hunts others can discover.</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="welcome-slide" role="group" aria-roledescription="slide" aria-label="2 of 4" aria-hidden="true">
-              <div class="welcome-slide-inner">
-                <h2 class="welcome-title">How it works</h2>
-                <ul class="welcome-features" role="list">
-                  <li class="welcome-feature">
-                    <span class="welcome-feature-icon">${ICON_CAMERA}</span>
-                    <div class="welcome-feature-body">
-                      <strong class="welcome-feature-title">Photo proof</strong>
-                      <p class="welcome-feature-text">Players capture moments at each stop—visual, playful, and easy to share.</p>
-                    </div>
-                  </li>
-                  <li class="welcome-feature">
-                    <span class="welcome-feature-icon">${ICON_CLOCK}</span>
-                    <div class="welcome-feature-body">
-                      <strong class="welcome-feature-title">Timed runs</strong>
-                      <p class="welcome-feature-text">Set a time limit, start a run, and see how much of the city you can clear before the buzzer.</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="welcome-slide" role="group" aria-roledescription="slide" aria-label="3 of 4" aria-hidden="true">
-              <div class="welcome-slide-inner">
-                <h2 class="welcome-title">Before you continue</h2>
-                <ul class="welcome-features" role="list">
-                  <li class="welcome-feature">
-                    <span class="welcome-feature-icon" aria-hidden="true">${ICON_BETA}</span>
-                    <div class="welcome-feature-body">
-                      <strong class="welcome-feature-title">Early access</strong>
-                      <p class="welcome-feature-text">Tourgo is still in active development. You may run into bugs, slow loads, or rough edges. If something looks wrong, try <strong>refreshing the page</strong> or signing out and back in.</p>
-                      <p class="welcome-feature-text welcome-feature-text--muted">We’re improving the app often—thanks for your patience.</p>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="welcome-slide welcome-slide--signin" role="group" aria-roledescription="slide" aria-label="4 of 4" aria-hidden="true">
-              <div class="welcome-slide-inner">
-                <section class="welcome-signin-final" aria-labelledby="welcome-signin-heading">
-                  <div class="welcome-signin-final-head">
-                    <div class="welcome-signin-final-badge" aria-hidden="true">
-                      <span class="welcome-signin-final-badge-icon">${ICON_USER}</span>
-                    </div>
-                    <h2 id="welcome-signin-heading" class="welcome-signin-final-title">Sign in</h2>
-                    <p class="welcome-signin-final-lead">Continue with Google to save hunts and merit points. You can stay signed in on <strong>multiple phones and browsers</strong> at the same time—everything stays linked to this Google account.</p>
-                  </div>
-                  <div id="login-status" class="welcome-signin-final-status"></div>
-                  <div class="welcome-signin-final-panel card">
-                    <div class="form-field" style="margin-bottom:0.75rem;text-align:left;">
-                      <label for="login-language-open">${escapeHtml(t("login.languageSectionTitle"))} <em class="profile-theme-beta-badge">${escapeHtml(t("common.languageBetaBadge"))}</em></label>
-                      <button type="button" id="login-language-open" class="language-picker-trigger" aria-haspopup="dialog">
-                        <span id="login-language-current">${escapeHtml(getLanguageNativeName(getAppLanguage()))}</span>
-                        <span class="language-picker-trigger__chevron" aria-hidden="true">▾</span>
-                      </button>
-                      <p class="field-hint" style="margin-top:0.35rem;">${escapeHtml(t("common.languageBetaNote"))} ${escapeHtml(t("login.languageSectionHint"))}</p>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-block" id="btn-google">Continue with Google</button>
-                    <button type="button" class="btn btn-secondary btn-block" id="btn-guest">Continue as guest</button>
-                    <p class="card-meta" style="margin-top:0.75rem;text-align:center;">Guests can browse hunts and the map. Sign in with Google to start a run, create hunts, or view the photo review feed.</p>
-                    <p class="auth-legal"><a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
-                    · <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms</a></p>
-                  </div>
-                </section>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="welcome-carousel-controls">
-          <div class="welcome-carousel-dots" role="group" aria-label="Slides">
-            <button type="button" class="welcome-carousel-dot is-active" aria-label="Slide 1 of 4" aria-current="true"></button>
-            <button type="button" class="welcome-carousel-dot" aria-label="Slide 2 of 4"></button>
-            <button type="button" class="welcome-carousel-dot" aria-label="Slide 3 of 4"></button>
-            <button type="button" class="welcome-carousel-dot" aria-label="Slide 4 of 4"></button>
-          </div>
-          <div class="welcome-carousel-nav welcome-carousel-nav--bottom">
-            <button type="button" class="btn btn-ghost welcome-carousel-prev" aria-label="Previous slide" hidden>Back</button>
-            <button type="button" class="btn btn-primary welcome-carousel-next" aria-label="Next slide">Next</button>
-          </div>
-        </div>
+    <div class="auth-page login-page">
+      <div class="login-viewport">
+        ${welcomeView()}
+        ${signinView()}
       </div>
     </div>
   `,
@@ -331,65 +209,123 @@ export function render() {
     { stripChrome: !auth.currentUser },
   );
 
-  const root = document.querySelector(".welcome-carousel");
-  if (root) wireWelcomeCarousel(root);
+  const els = collectLoginElements();
+  wireLoginViewControls(els);
+  wirePasswordToggle(els);
+  showRedirectErrorIfAny(els.statusEl);
+  wireGuestLogin(els.btnGuest);
+  wireEmailLogin(els);
+  wireGoogleLogin(els);
+}
 
-  const statusEl = document.getElementById("login-status");
-  const btn = document.getElementById("btn-google");
-  const btnGuest = document.getElementById("btn-guest");
-  const langOpenBtn = document.getElementById("login-language-open");
-  langOpenBtn?.addEventListener("click", async () => {
-    const next = await openLanguagePickerModal({
-      title: `${t("common.language")} (${t("common.languageBetaBadge")})`,
-      options: getSupportedLanguages().map((lang) => ({
-        code: lang.code,
-        label: lang.nativeName,
-      })),
-      selectedCode: getAppLanguage(),
-      confirmText: "Confirm",
-      cancelText: "Cancel",
-    });
-    if (next && next !== getAppLanguage()) {
-      setAppLanguage(next);
-    }
+function collectLoginElements() {
+  return {
+    btnBegin: document.getElementById("btn-begin"),
+    btnBack: document.getElementById("btn-back"),
+    btnGoogle: document.getElementById("btn-google"),
+    btnGuest: document.getElementById("btn-guest"),
+    btnSignIn: document.getElementById("btn-signin"),
+    btnShowPass: document.getElementById("btn-show-pass"),
+    form: document.getElementById("login-form"),
+    statusEl: document.getElementById("login-status"),
+    emailInput: document.getElementById("login-email"),
+    passwordInput: document.getElementById("login-password"),
+  };
+}
+
+function wireLoginViewControls({ btnBegin, btnBack, emailInput }) {
+  btnBegin?.addEventListener("click", () => {
+    showView("signin");
+    emailInput?.focus();
   });
+  btnBack?.addEventListener("click", () => showView("welcome"));
+}
 
+function wirePasswordToggle({ btnShowPass, passwordInput }) {
+  btnShowPass?.addEventListener("click", () => {
+    const next = passwordInput.type === "password" ? "text" : "password";
+    passwordInput.type = next;
+    btnShowPass.textContent = next === "password" ? "show" : "hide";
+    btnShowPass.setAttribute(
+      "aria-label",
+      next === "password" ? "Show password" : "Hide password",
+    );
+  });
+}
+
+function showRedirectErrorIfAny(statusEl) {
   const redirectErr = consumeAuthRedirectError();
-  if (redirectErr && statusEl) {
-    statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(redirectErr))}</div>`;
-  }
+  if (!redirectErr || !statusEl) return;
+  statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(redirectErr))}</div>`;
+  showView("signin");
+}
 
+function wireGuestLogin(btnGuest) {
   btnGuest?.addEventListener("click", () => {
     setGuestSession(true);
     nav("#/");
   });
+}
 
-  btn.addEventListener("click", async () => {
+function wireEmailLogin({ form, statusEl, emailInput, passwordInput, btnSignIn }) {
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
     statusEl.innerHTML = "";
-    btn.disabled = true;
-    const useRedirect = prefersGoogleAuthRedirect();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if (!email || !password) {
+      statusEl.innerHTML = `<div class="status-banner error">Enter your email and password.</div>`;
+      return;
+    }
+    btnSignIn.disabled = true;
     try {
-      if (useRedirect) {
-        statusEl.innerHTML =
-          '<div class="status-banner">Opening Google sign-in…</div>';
-      }
-      await signInWithGoogle();
-      if (useRedirect) return;
-      await auth.authStateReady();
-      if (!auth.currentUser) {
-        throw new Error(
-          "Sign-in finished but no user session (try a normal browser tab, not the editor preview).",
-        );
-      }
-      afterAuthSuccess();
-    } catch (e) {
-      statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(e))}</div>`;
-      btn.disabled = false;
+      await completeEmailSignIn(email, password);
+    } catch (err) {
+      statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(err))}</div>`;
+      btnSignIn.disabled = false;
     }
   });
 }
 
+async function completeEmailSignIn(email, password) {
+  await signInWithEmail(email, password);
+  await auth.authStateReady();
+  if (!auth.currentUser) {
+    throw new Error("Sign-in finished but no user session was created.");
+  }
+  afterAuthSuccess();
+}
+
+function wireGoogleLogin({ btnGoogle, statusEl }) {
+  btnGoogle?.addEventListener("click", async () => {
+    statusEl.innerHTML = "";
+    btnGoogle.disabled = true;
+    const useRedirect = prefersGoogleAuthRedirect();
+    try {
+      await completeGoogleSignIn(statusEl, useRedirect);
+    } catch (e) {
+      statusEl.innerHTML = `<div class="status-banner error">${escapeHtml(signInErrorMessage(e))}</div>`;
+      btnGoogle.disabled = false;
+    }
+  });
+}
+
+async function completeGoogleSignIn(statusEl, useRedirect) {
+  if (useRedirect) {
+    statusEl.innerHTML =
+      '<div class="status-banner">Opening Google sign-in…</div>';
+  }
+  await signInWithGoogle();
+  if (useRedirect) return;
+  await auth.authStateReady();
+  if (!auth.currentUser) {
+    throw new Error(
+      "Sign-in finished but no user session (try a normal browser tab, not the editor preview).",
+    );
+  }
+  afterAuthSuccess();
+}
+
 export function cleanup() {
-  carouselAbort?.abort();
-  carouselAbort = null;
+  // no-op
 }

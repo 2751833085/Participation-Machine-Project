@@ -2,7 +2,7 @@
  * Proximity rules for starting hunts, publishing, and photo proof.
  */
 
-import { haversineMeters } from "../services/geocoding.js";
+import { haversineMeters } from "./distance.js";
 
 export const START_HUNT_MAX_DISTANCE_M = 150;
 export const CREATE_HUNT_MAX_DISTANCE_M = 150;

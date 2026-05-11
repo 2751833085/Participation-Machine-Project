@@ -1,0 +1,134 @@
+# Sentrux — 与 Tourgo 配合使用
+# 说明: https://github.com/sentrux/sentrux/blob/main/README.zh-CN.md
+#
+# 用法:
+#   sentrux check .
+#   sentrux gate --save .   # 会话前基线
+#   sentrux gate .          # 会话后对比（防架构退化）
+#
+# 注意: ARCHITECTURE.md 中的「理想单向链」与当前实现略有偏差
+# （例如 lib 内若干文件会 import services；auth/reports 会 import modal）。
+# 下面先用「粗分层 + 硬边界」让 sentrux check 能反映真实图；收紧规则时可再拆层或改 import。
+
+[constraints]
+max_cycles = 0
+# 主应用仍有若干较大的页面 render；先收紧到能覆盖当前拆分成果的守门线
+max_cc = 15
+max_fn_lines = 380
+no_god_files = true
+
+# 主 SPA 整块一层，避免与现状冲突的细粒度 false positive
+[[layers]]
+name = "neoui_spa"
+paths = ["public/js/**/*.js"]
+order = 0
+
+# Friends：纯工具库先于入口/未来拆分模块（同层内不得从 lib 回指 app）
+[[layers]]
+name = "friend_lib"
+paths = ["public/game/js/lib/**/*.js"]
+order = 1
+
+[[layers]]
+name = "friend_actions"
+paths = ["public/game/js/actions/**/*.js"]
+order = 2
+
+[[layers]]
+name = "friend_render"
+paths = ["public/game/js/render/**/*.js"]
+order = 3
+
+# 入口 + 与 app 同进程的可变状态（须能 import Firebase 桥；不得被 layer_direction 判为「顶层依赖 state 层」）
+[[layers]]
+name = "friend_manhunt"
+paths = [
+  "public/game/js/app.js",
+  "public/game/js/state.js",
+  "public/game/js/camera-session.js",
+  "public/game/js/phase-transitions.js",
+  "public/game/js/camera-scanner.js",
+  "public/game/js/keyboard-floater.js",
+  "public/game/js/app-handlers.js",
+  "public/game/js/friend-handlers-utils.js",
+  "public/game/js/friend-handlers-click.js",
+  "public/game/js/friend-handlers-input.js",
+]
+order = 4
+
+# Friend `lib/` 不得依赖主应用（Firebase 入口暂保留在 app.js → ../../js/firebase-init.js）
+[[boundaries]]
+from = "public/game/js/lib/**"
+to = "public/js/**"
+reason = "Friends lib 禁止 import NeoUI public/js；共享 Firebase 仅由 app.js 桥接"
+
+# Friends `actions/` 同样不得依赖 NeoUI 业务模块
+[[boundaries]]
+from = "public/game/js/actions/**"
+to = "public/js/**"
+reason = "Friends actions 禁止 import NeoUI public/js"
+
+# Friends `render/` 不得依赖 NeoUI
+[[boundaries]]
+from = "public/game/js/render/**"
+to = "public/js/**"
+reason = "Friends render 禁止 import NeoUI public/js"
+
+# `state.js` / `camera-session.js` 不得依赖 NeoUI
+[[boundaries]]
+from = "public/game/js/state.js"
+to = "public/js/**"
+reason = "Friends state 模块禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/camera-session.js"
+to = "public/js/**"
+reason = "Friends camera-session 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/phase-transitions.js"
+to = "public/js/**"
+reason = "Friends phase-transitions 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/camera-scanner.js"
+to = "public/js/**"
+reason = "Friends camera-scanner 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/keyboard-floater.js"
+to = "public/js/**"
+reason = "Friends keyboard-floater 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/app-handlers.js"
+to = "public/js/**"
+reason = "Friends app-handlers 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/friend-handlers-utils.js"
+to = "public/js/**"
+reason = "Friends friend-handlers-utils 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/friend-handlers-click.js"
+to = "public/js/**"
+reason = "Friends friend-handlers-click 禁止 import NeoUI public/js"
+
+[[boundaries]]
+from = "public/game/js/friend-handlers-input.js"
+to = "public/js/**"
+reason = "Friends friend-handlers-input 禁止 import NeoUI public/js"
+
+# lib 不反向依赖 actions（单向：actions 可 import lib，反之禁止）
+[[boundaries]]
+from = "public/game/js/lib/**"
+to = "public/game/js/actions/**"
+reason = "Friends lib 不得 import actions 层"
+
+[[boundaries]]
+from = "public/game/js/lib/**"
+to = "public/game/js/render/**"
+reason = "Friends lib 不得 import render 层"
+
+# 仅 lib/actions/render/state 禁止直连 NeoUI；app.js 允许 import firebase-init 桥

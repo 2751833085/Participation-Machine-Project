@@ -1,0 +1,2929 @@
+/*
+ * Neo Design theme (Phase 1)
+ * --------------------------
+ * Start/login onboarding redesign. Scoped to the Neo UI theme id.
+ */
+
+:root {
+  --neo-bg: #efeee8;
+  --neo-accent: #de542f;
+  --neo-accent-soft: #ef8f75;
+  --neo-deep: #1d5c4d;
+  --neo-copy: #de6b4a;
+  --neo-dot-off: #c9cec4;
+  color-scheme: light;
+  forced-color-adjust: none;
+}
+
+body,
+.app-shell {
+  background: var(--neo-bg);
+}
+
+.app-header,
+.app-footer {
+  display: none;
+}
+
+body:has(.app-dock--five) #app-main.main-wrap:not(.main-wrap--solo) {
+  padding-bottom: max(9.6rem, calc(7.4rem + env(safe-area-inset-bottom, 0px)));
+}
+
+.app-dock {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 0 !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  padding: 0 0.7rem max(0.55rem, env(safe-area-inset-bottom, 0px));
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+}
+
+.app-dock-inner--five {
+  width: 100%;
+  max-width: var(--content-max);
+  background: #eaddbd;
+  border: 1px solid rgba(95, 70, 40, 0.12);
+  border-radius: 1.55rem;
+  box-shadow:
+    0 10px 26px rgba(60, 40, 20, 0.16),
+    0 1px 0 rgba(255, 247, 232, 0.7) inset;
+  padding: 0.42rem 0.55rem;
+  gap: 0.18rem;
+  column-gap: 0.18rem;
+  overflow: visible;
+}
+
+.app-dock:has(.app-dock-inner--five) {
+  overflow: visible;
+}
+
+.app-dock-inner--five > a.mobile-tab,
+.app-dock-inner--five > a.mobile-tab.mobile-tab-plus {
+  transform: none;
+}
+
+.app-dock-inner--five .mobile-tab {
+  min-height: 3.4rem;
+  padding: 0.34rem 0.42rem;
+  /* Inactive icons use the accent terracotta line color — matches the
+     Claude reference dock where the home/bookmark/profile glyphs render
+     in warm orange, not muted gray. */
+  color: #c76a4e;
+  border: none;
+  border-radius: 0.95rem;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  transition:
+    background-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-dock-inner--five .mobile-tab,
+.app-dock-inner--five .mobile-tab-plus {
+  transform: none !important;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active {
+  background: #c76a4e;
+  color: #fdf6e6;
+  /* Tighter rounded-rectangle (not full pill) to match the reference
+     active-tab chip that sits inside the cream dock. */
+  border-radius: 0.95rem;
+}
+
+.app-dock-inner--five .mobile-tab-caption {
+  opacity: 0;
+  font-size: 0.62rem;
+  line-height: 1.08;
+  margin: 0;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+  color: currentColor;
+  /* Reference caption reads "Rank" not "RANK" — drop the uppercase. */
+  text-transform: none;
+  pointer-events: none;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-caption {
+  opacity: 1;
+  max-height: 0.9rem;
+  min-height: 0.6rem;
+  margin-top: 0.04rem;
+  color: #fdf6e6;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus) .mobile-tab-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.6rem;
+  background: transparent;
+  transition: none;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus) .mobile-tab-icon svg {
+  width: 1.55rem;
+  height: 1.55rem;
+  color: currentColor;
+}
+
+.app-dock-inner--five .mobile-tab-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.6rem;
+}
+
+.app-dock-inner--five .mobile-tab-icon svg {
+  width: 1.55rem;
+  height: 1.55rem;
+  transition: none;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-icon {
+  background: transparent;
+  transform: none;
+}
+
+.app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-icon svg {
+  color: #fdf6e6;
+}
+
+.app-dock-inner--five .mobile-tab-plus {
+  min-width: 4rem;
+  padding-top: 0;
+  align-self: center;
+  justify-content: flex-start;
+  background: transparent !important;
+}
+
+.app-dock-inner--five .mobile-tab-plus-circle {
+  width: 3.75rem;
+  height: 3.75rem;
+  background: #eaddbd;
+  /* Cream halo: a ring the same color as the dock pill bg so the lifted
+     circle reads as a cutout (matches Claude reference). The circle is only
+     slightly raised — just enough to peek above the dock, not floating. */
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 8px 18px rgba(77, 65, 48, 0.22);
+  transition:
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(-0.55rem);
+}
+
+.app-dock-inner--five .mobile-tab-plus-circle svg {
+  width: 1.7rem;
+  height: 1.7rem;
+  color: #c76a4e;
+  transition: color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle {
+  box-shadow:
+    0 0 0 0.28rem #eaddbd,
+    0 0 0 0.32rem rgba(95, 70, 40, 0.14),
+    0 8px 18px rgba(77, 65, 48, 0.26);
+  background: #c76a4e;
+}
+
+.app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle svg {
+  color: #fdf6e6;
+}
+
+.app-dock-inner--five .mobile-tab-plus .mobile-tab-caption,
+.app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-caption {
+  opacity: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+
+.app-dock-inner--five .mobile-tab-plus:hover:not(.is-active) .mobile-tab-plus-circle {
+  background: #c76a4e;
+}
+
+.app-dock-inner--five .mobile-tab-plus:hover:not(.is-active) .mobile-tab-plus-circle svg {
+  color: #eaddbd;
+}
+
+.app-dock-inner--five .mobile-tab-plus:active .mobile-tab-plus-circle {
+  background: #f08a64;
+}
+
+/* Dark-mode dock adaptation */
+html[data-theme="dark"] .app-dock {
+  background: transparent !important;
+  border-top-color: rgba(244, 236, 220, 0.12);
+}
+
+/* Previously the light-mode cream pill bg (#eaddbd) leaked into dark mode
+   because only `.app-dock` (the transparent outer shell) had a dark override,
+   not the inner pill. Give `.app-dock-inner--five` a dark surface that
+   matches the plus-circle halo color (#3a3340) so the cutout ring still
+   blends cleanly in dark mode. */
+html[data-theme="dark"] .app-dock-inner--five {
+  background: #3a3340;
+  border-color: rgba(244, 236, 220, 0.1);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(244, 236, 220, 0.06) inset;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab {
+  color: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab.is-active {
+  color: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-caption {
+  color: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab.is-active .mobile-tab-icon svg {
+  color: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus-circle {
+  background: #3a3340;
+  border-color: transparent;
+  /* Invert default plus colors in dark mode: dark center + peach ring. */
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle {
+  background: #e8a37a;
+  box-shadow:
+    0 0 0 0.28rem #3a3340,
+    0 0 0 0.32rem rgba(255, 247, 232, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle svg {
+  color: #2a2530;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus-circle svg {
+  color: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus:hover:not(.is-active) .mobile-tab-plus-circle {
+  background: #e8a37a;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus:hover:not(.is-active) .mobile-tab-plus-circle svg {
+  color: #3a3340;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus:active .mobile-tab-plus-circle {
+  background: #f6bd99;
+}
+
+/* Active tab in dark mode uses the accent peach pill */
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active {
+  background: #e8a37a;
+  color: #2a2530;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-caption {
+  color: #2a2530;
+}
+
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab:not(.mobile-tab-plus).is-active .mobile-tab-icon svg {
+  color: #2a2530;
+}
+
+/* Portrait-gate styling is fully owned by portrait-gate.css — full-bleed
+   rust-red warning surface. Do not re-theme here; token overrides only. */
+
+.loading {
+  color: var(--neo-accent);
+  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+  font-size: clamp(2rem, 7vw, 2.9rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-align: center;
+  margin: 0;
+}
+
+.main-wrap--solo .page-transition-root > .loading {
+  min-height: calc(100dvh - max(2.4rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neo-hunts-page {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  /* Horizontal gutter now matches the dock (.app-dock padding: 0 0.7rem)
+     so tiles align flush with the pill bar. Hero (kicker + title) gets a
+     compensating inner padding so the title's x doesn't shift. */
+  padding: calc(env(safe-area-inset-top, 0px) + 0.82rem) 0.7rem
+    calc(8.9rem + env(safe-area-inset-bottom, 0px));
+}
+
+.neo-hunts-page:not(.neo-saved-page) .neo-home-card {
+  opacity: 1;
+  transform: none;
+}
+
+.neo-saved-page .neo-saved-card {
+  opacity: 1;
+  transform: none;
+}
+
+.neo-hunts-title {
+  margin: 0.25rem 0 1rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  color: #2f5a4e;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  font-size: clamp(2.5rem, 11.3vw, 2.95rem);
+  line-height: 0.9;
+}
+
+.neo-hunts-title-accent {
+  color: #de6f49;
+}
+
+.neo-view-toggle {
+  /* Unified gap below the page title (Hunts/Saved/Rank all get ~20px). */
+  margin: 20px 0 0.8rem;
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0.28rem;
+  padding: 0.24rem;
+  border-radius: 999px;
+  border: 1px solid rgba(53, 84, 73, 0.2);
+  background: rgba(250, 243, 232, 0.9);
+}
+
+.neo-view-toggle__btn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #2f5a4e;
+  min-height: 1.9rem;
+  padding: 0 0.78rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.neo-view-toggle__btn.is-active {
+  background: #2f5a4e;
+  color: #fef5df;
+}
+
+.neo-hunts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  transition:
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
+}
+
+.neo-hunts-grid.neo-hunts-grid--list {
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.neo-hunts-grid.neo-view-switch-enter {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  filter: blur(1px);
+}
+
+.neo-hunts-grid.neo-view-switch-enter.neo-view-switch-enter-active {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+}
+
+.neo-hunt-card {
+  display: block;
+  min-height: 100%;
+  position: relative;
+  --neo-card-fg: #2f5a4e;
+  border-radius: 1.2rem;
+  padding: 0.62rem;
+  text-decoration: none;
+  color: var(--neo-card-fg);
+  box-shadow: 0 3px 0 rgba(65, 42, 21, 0.14);
+  text-align: center;
+}
+
+.neo-hunt-card--list {
+  text-align: left;
+}
+
+.neo-hunt-card--list .neo-hunt-card__meta,
+.neo-hunt-card--list .neo-hunt-card__title,
+.neo-hunt-card--list .neo-hunt-card__footer {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.neo-hunt-card__heart {
+  position: static;
+  z-index: 1;
+  color: var(--neo-card-fg);
+  font-size: 1.06rem;
+}
+
+.neo-hunt-card__actions--grid {
+  position: absolute;
+  top: 0.48rem;
+  right: 0.54rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  align-items: center;
+}
+
+.neo-hunt-action-btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  width: 1.6rem;
+  height: 1.6rem;
+  min-width: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--neo-card-fg);
+}
+
+.neo-hunt-card__actions--grid .neo-hunt-action-btn {
+  width: 1.72rem;
+  height: 1.72rem;
+  border-radius: 999px;
+  background: rgba(255, 247, 232, 0.82);
+  box-shadow: 0 1px 2px rgba(42, 37, 32, 0.12);
+  color: var(--neo-card-fg);
+}
+
+.neo-hunt-action-btn svg {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.neo-hunt-card__actions--grid .neo-hunt-action-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.neo-hunt-action-btn--report {
+  color: var(--neo-card-fg);
+}
+
+.neo-hunt-action-btn--fav {
+  opacity: 0.82;
+}
+
+.neo-hunt-card__actions--grid .neo-hunt-action-btn--fav {
+  opacity: 1;
+  color: color-mix(in srgb, var(--neo-card-fg) 55%, transparent);
+}
+
+.neo-hunt-action-btn--fav.is-favorited {
+  opacity: 1;
+}
+
+.neo-hunt-card__actions--grid .neo-hunt-action-btn--fav.is-favorited {
+  color: #d9643c;
+  background: #fff3e0;
+}
+
+.neo-hunt-action-btn:focus,
+.neo-hunt-action-btn:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+
+.neo-hunt-card__thumb-wrap {
+  display: block;
+  position: relative;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  width: 100%;
+  margin-right: 0;
+  /* aspect-ratio is the modern source of truth, but on the *first*
+     paint Safari (iOS + macOS) and Chromium-on-grid-stretch sometimes
+     delay computing it by a frame — so the wrap briefly has 0 height
+     and the absolutely-positioned <img> renders at its intrinsic
+     400×400 attribute box (or in the wrong shape if the source photo
+     is portrait). The next reflow snaps it back to the square, which
+     reads as the "拉伸" the user reports.
+     Belt-and-suspenders: keep `aspect-ratio` for layout intent, and
+     also use the classic `::before { padding-top: 100% }` hack as a
+     guaranteed-immediate height source. The img stays absolute and
+     paints into a stable square box from frame 1. */
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.18);
+  isolation: isolate;
+  /* Stop the box from being squashed by the absolutely-positioned
+     child's intrinsic dimensions on browsers that haven't yet
+     resolved aspect-ratio for this paint. */
+  contain: layout paint;
+}
+
+.neo-hunt-card__thumb-wrap::before {
+  content: "";
+  display: block;
+  /* 100% padding-top against an in-flow block resolves to 100% of the
+     block's *width* — making the wrap square independent of
+     aspect-ratio support. Harmless on browsers where aspect-ratio
+     wins; rescues it on the ones where it doesn't. */
+  padding-top: 100%;
+}
+
+.neo-hunt-card__thumb {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `cover` is the whole point — keep it the winner against any later
+     rule (motion-image entrance, theme overrides) so a non-square photo
+     never stretches into the square wrap. */
+  object-fit: cover !important;
+  object-position: center;
+  border-radius: inherit;
+  /* Drop the redundant `aspect-ratio: 1/1` — combined with the absolute
+     positioning + parent's aspect-ratio it occasionally caused the
+     browser to compute the img box from its own intrinsic ratio (the
+     "拉伸" the user reported on non-square source images). */
+}
+
+.neo-hunts-page:not(.neo-saved-page) .neo-home-card .neo-hunt-card__thumb {
+  opacity: 1;
+  transform: none;
+}
+
+.neo-hunt-card__thumb--empty {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.neo-hunt-card__meta {
+  display: block;
+  margin: 0.46rem 0 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  color: var(--neo-card-fg);
+  font-style: italic;
+}
+
+.neo-hunt-card__title {
+  display: block;
+  margin: 0.34rem 0 0;
+  font-size: clamp(1.58rem, 7.1vw, 1.9rem);
+  line-height: 0.9;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  /* Barlow Condensed only ships 500/600/700 from the Google Fonts link.
+     Without an explicit weight, the browser asks for 400, falls back to
+     a system font, and the title reads thin + off-style. */
+  font-weight: 700;
+  color: var(--neo-card-fg);
+}
+
+.neo-hunt-card__footer {
+  display: flex;
+  margin-top: 0.2rem;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--neo-card-fg);
+}
+
+.neo-hunt-card__warn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: var(--neo-card-fg);
+  font-size: 1.06rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.neo-hunt-card--lavender {
+  background: #c9add1;
+  --neo-card-fg: #3f2a56;
+}
+
+.neo-hunt-card--peach {
+  background: #ea9b7d;
+  --neo-card-fg: #5a2615;
+}
+
+.neo-hunt-card--mustard {
+  background: #c9b45a;
+  --neo-card-fg: #3e3310;
+}
+
+.neo-hunt-card--mint {
+  background: #a8c1ad;
+  --neo-card-fg: #1d5c4d;
+}
+
+.neo-hunt-card--list {
+  display: grid;
+  grid-template-columns: 5.9rem minmax(0, 1fr) 2.05rem;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.58rem 0.56rem;
+}
+
+.neo-hunt-card--list .neo-hunt-card__thumb-wrap {
+  display: block;
+  width: 100%;
+  margin-right: 0;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.74rem;
+}
+
+.neo-hunt-card--list .neo-hunt-card__text {
+  min-width: 0;
+}
+
+.neo-hunt-card--list .neo-hunt-card__meta {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.neo-hunt-card--list .neo-hunt-card__title {
+  margin-top: 0.22rem;
+  font-size: clamp(1.85rem, 5.2vw, 2.45rem);
+  line-height: 0.86;
+  font-weight: 700;
+}
+
+.neo-hunt-card--list .neo-hunt-card__footer {
+  margin-top: 0.22rem;
+  justify-content: flex-start;
+}
+
+.neo-hunt-card--list .neo-hunt-card__actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  padding: 0.08rem 0;
+}
+
+.neo-hunt-card--list .neo-hunt-card__heart {
+  position: static;
+  font-size: 1.22rem;
+  line-height: 1;
+  color: var(--neo-card-fg);
+  background: transparent;
+  width: auto;
+  height: auto;
+  min-width: 0;
+}
+
+.neo-hunt-card--list .neo-hunt-card__warn {
+  font-size: 1.28rem;
+  line-height: 1;
+  color: #264f43;
+}
+
+.neo-hunts-empty {
+  grid-column: 1 / -1;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  color: #39544d;
+  text-align: center;
+}
+
+.neo-hunts-guide {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 248, 224, 0.82);
+  color: #335248;
+  box-shadow: 0 3px 8px rgba(63, 45, 22, 0.12);
+}
+
+.neo-hunts-mode-stage {
+  opacity: 1;
+  transform: none;
+}
+
+/* Generic first-reveal gate — used by Hunts / Rank / Saved (and any other
+   page that opts in via .neo-preload-gate). Keeps the surface invisible
+   while JS waits for fonts + image decode, then fades it in cleanly. We
+   deliberately don't paint a skeleton here: a gradient bg flashed through
+   during the opacity transition (the user saw it as a "wrong background"). */
+.neo-preload-gate.is-prepping,
+#hunts-feed.is-prepping {
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
+  min-height: 14rem;
+}
+
+.neo-preload-gate.is-ready,
+#hunts-feed.is-ready {
+  opacity: 1;
+  transition: opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neo-preload-gate.is-ready,
+  #hunts-feed.is-ready {
+    transition: none;
+  }
+}
+
+.neo-challenge-page {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0.52rem 0.92rem calc(1.05rem + env(safe-area-inset-bottom, 0px));
+  color: #204c43;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.neo-challenge-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.48rem;
+}
+
+.neo-challenge-back {
+  color: #31564e;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.neo-challenge-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.36rem;
+}
+
+.neo-challenge-toolbar .neo-challenge-favorite,
+.neo-challenge-toolbar .neo-challenge-report {
+  position: static;
+  width: 2.08rem;
+  height: 2.08rem;
+  min-width: 2.08rem;
+  border-radius: 0.62rem;
+  background: #f4dfab;
+  box-shadow: 0 3px 8px rgba(84, 61, 36, 0.17);
+  opacity: 1;
+}
+
+.neo-challenge-surface {
+  border-radius: 1.15rem;
+  background: #ea9b7d;
+  box-shadow: 0 6px 14px rgba(79, 57, 31, 0.1);
+}
+
+.neo-challenge-hero {
+  padding: 0.86rem 0.95rem 0.92rem;
+  margin-top: 0.24rem;
+}
+
+.neo-challenge-badge {
+  display: inline-block;
+  margin: 0 0 0.52rem;
+  padding: 0.32rem 0.58rem;
+  border-radius: 0.48rem;
+  background: #f4dfab;
+  color: #31564d;
+  font-size: 0.78rem;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.neo-challenge-title {
+  margin: 0;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.45rem, 10vw, 3.6rem);
+  line-height: 0.9;
+  color: #1d4b43;
+}
+
+.neo-challenge-area {
+  margin: 0.34rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #30574e;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.neo-challenge-hint-wrap .hunt-challenge-hint {
+  margin: 0.7rem 0 0;
+  padding: 0.55rem 0.72rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 248, 224, 0.82);
+}
+
+.neo-challenge-map-wrap {
+  margin-top: 0.82rem;
+  padding: 0.46rem;
+  background: #c9b45a;
+}
+
+.neo-challenge-map-wrap .challenge-start-map-card {
+  margin: 0;
+}
+
+.neo-challenge-page .challenge-start-map-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(131, 105, 71, 0.18);
+  background: rgba(255, 251, 237, 0.9);
+  box-shadow: 0 4px 10px rgba(79, 57, 31, 0.08);
+}
+
+.neo-challenge-page .challenge-start-map-note {
+  padding: 0.56rem 0.8rem 0.7rem;
+  font-size: 0.74rem;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.neo-challenge-hint-wrap .hunt-challenge-hint,
+.neo-challenge-page #challenge-status,
+.neo-challenge-page .card-meta {
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.neo-challenge-actions {
+  margin-top: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.66rem;
+}
+
+.neo-challenge-start-btn {
+  background: #e97651;
+  border-color: #e97651;
+  color: #fff7ea;
+  border-radius: 0.9rem;
+  font-size: 1.2rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.neo-challenge-review-btn {
+  background: rgba(255, 251, 240, 0.92);
+  border-color: rgba(131, 105, 71, 0.18);
+  color: #2f544b;
+  border-radius: 0.9rem;
+  font-size: 1.1rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.neo-challenge-page #challenge-status {
+  margin-top: 0.45rem;
+}
+
+.neo-challenge-checkpoints {
+  margin-top: 1rem;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+.neo-challenge-checkpoints .spot-check {
+  border-bottom: 0;
+  border-radius: 1rem;
+  padding: 0.58rem;
+  margin-bottom: 0.64rem;
+  background: #c9add1;
+  box-shadow: 0 4px 10px rgba(79, 57, 31, 0.08);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.neo-challenge-checkpoints .spot-check:nth-child(even) {
+  background: #a8c1ad;
+}
+
+.neo-challenge-checkpoints .spot-check:last-child {
+  margin-bottom: 0;
+}
+
+.neo-challenge-checkpoints .spot-check img {
+  width: 5.3rem;
+  height: 5.3rem;
+  border-radius: 0.7rem;
+  object-fit: cover;
+}
+
+.neo-challenge-checkpoints .spot-check .body {
+  color: #2d534a;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  padding-top: 0.32rem;
+}
+
+.neo-challenge-checkpoints .spot-check .body strong {
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.55rem;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  display: block;
+  margin-top: 0.08rem;
+}
+
+.neo-hunts-guide h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.neo-hunts-guide p {
+  margin: 0.4rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.neo-hunts-guide ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+}
+
+.neo-hunts-guide li {
+  margin: 0.25rem 0;
+  font-size: 0.88rem;
+  line-height: 1.32;
+}
+
+.loading::after {
+  content: none;
+  animation: none;
+}
+
+.entry-welcome {
+  position: relative;
+  min-height: calc(100dvh - max(2.4rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+  display: block;
+  background: #efeee8;
+  color: #1d5c4d;
+  padding: max(1rem, env(safe-area-inset-top) + 0.4rem) 1.1rem
+    max(1rem, env(safe-area-inset-bottom) + 0.5rem);
+  opacity: 1;
+  transition: opacity 420ms ease;
+}
+
+.entry-welcome.is-ending {
+  opacity: 0;
+}
+
+.entry-welcome__inner {
+  position: static;
+  width: min(26rem, 100%);
+  min-height: calc(100dvh - max(2.4rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+  margin: 0 auto;
+}
+
+.entry-welcome .entry-welcome__greeting {
+  margin: 0;
+  position: absolute;
+  top: clamp(5.8rem, 16.5dvh, 10.2rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+  color: var(--neo-accent, #de542f);
+  font-family:
+    "Barlow Condensed",
+    "Avenir Next Condensed",
+    "DIN Condensed",
+    "Arial Narrow",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-size: clamp(2.7rem, 10.4vw, 3.7rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.028em;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.entry-welcome__meta {
+  position: absolute;
+  top: clamp(17.8rem, 52dvh, 27.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: clamp(9.2rem, 24dvw, 11.4rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.entry-welcome__line {
+  margin: 0;
+  text-align: center;
+  font-family:
+    "Avenir Next",
+    "Helvetica Neue",
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  font-size: clamp(1.38rem, 4.9vw, 1.95rem);
+  line-height: 1.3;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0.004em;
+  opacity: 0;
+  transform: translate(-50%, 18px);
+}
+
+.entry-welcome__line.is-visible {
+  animation:
+    welcome-line-rise 1180ms cubic-bezier(0.2, 0.7, 0.22, 1) forwards,
+    welcome-line-fade 300ms ease-out 120ms forwards;
+}
+
+@keyframes welcome-line-rise {
+  0% {
+    transform: translate(-50%, 18px);
+  }
+  100% {
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes welcome-line-fade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+#entry-welcome-time {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  font-size: clamp(1.8rem, 6vw, 2.3rem);
+}
+
+#entry-welcome-date {
+  position: absolute;
+  top: clamp(2.2rem, 6dvw, 3rem);
+  left: 50%;
+  width: 100%;
+  font-size: clamp(1.8rem, 6vw, 2.3rem);
+}
+
+#entry-welcome-temp {
+  position: absolute;
+  top: clamp(4.55rem, 12.5dvw, 6rem);
+  left: 50%;
+  width: 100%;
+  font-size: clamp(2.12rem, 6.6vw, 2.65rem);
+  font-weight: 560;
+}
+
+#entry-welcome-weather {
+  position: absolute;
+  top: clamp(6.95rem, 18.7dvw, 8.95rem);
+  left: 50%;
+  width: 100%;
+  font-size: clamp(1.74rem, 5.8vw, 2.22rem);
+}
+
+.entry-welcome__tagline {
+  position: absolute;
+  bottom: clamp(2.8rem, 8dvh, 5rem);
+  left: 50%;
+  width: 100%;
+  font-size: clamp(2.02rem, 6.4vw, 2.58rem);
+  line-height: 1.2;
+  font-weight: 540;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neo-hunts-page:not(.neo-saved-page) .neo-home-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .neo-hunts-page:not(.neo-saved-page) .neo-home-card .neo-hunt-card__thumb {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .entry-welcome,
+  .entry-welcome__line {
+    transition: none;
+    animation: none !important;
+  }
+
+  .entry-welcome__line {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  .leaderboard-page--neo #leaderboard-neo-content .leaderboard-neo-block--hydrated {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes neo-caret {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.main-wrap--solo .welcome-page {
+  max-width: 460px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(1.2rem, env(safe-area-inset-top) + 0.6rem) 1.2rem
+    max(1.45rem, env(safe-area-inset-bottom) + 0.7rem);
+}
+
+.neo-welcome-carousel {
+  width: 100%;
+  min-height: calc(100dvh - max(2.4rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.welcome-carousel-viewport {
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.welcome-carousel-track {
+  height: 100%;
+  width: 500%;
+}
+
+.neo-slide {
+  min-height: 100%;
+  flex: 0 0 20%;
+}
+
+.neo-slide-inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  padding: clamp(0.35rem, 1.8vh, 0.9rem) 0.3rem 0.6rem;
+}
+
+.neo-slide--intro .neo-slide-inner {
+  gap: 0.95rem;
+  min-height: auto;
+  justify-content: flex-start;
+}
+
+.neo-slide--intro {
+  min-height: auto;
+}
+
+.neo-hero {
+  text-align: center;
+}
+
+.neo-logo {
+  margin: 0 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.04em;
+  color: var(--neo-accent);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(3.7rem, 15.2vw, 4.85rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.neo-logo-o {
+  width: 0.54em;
+  height: 0.54em;
+  border: 0.13em solid var(--neo-accent);
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  margin-top: 0.02em;
+}
+
+.neo-logo-o::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 0.18em;
+  height: 0.18em;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #b8aad8;
+}
+
+.neo-title {
+  margin: 0;
+  text-align: center;
+  color: #ef7250;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(2.15rem, 9.4vw, 2.95rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.neo-lead {
+  margin: 1rem auto 0;
+  max-width: 20.4rem;
+  color: var(--neo-copy);
+  text-align: center;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(1.21rem, 4.5vw, 1.42rem);
+  line-height: 1.56;
+  letter-spacing: 0.005em;
+}
+
+.neo-card {
+  border-radius: 1.6rem;
+  background: var(--neo-accent-soft);
+  box-shadow: 0 5px 13px rgba(10, 35, 28, 0.16);
+  padding: 1.35rem 1.35rem 1.45rem;
+}
+
+.neo-card-title {
+  margin: 0;
+  color: var(--neo-deep);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(1.8rem, 6.9vw, 2.15rem);
+  line-height: 1.22;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.neo-card-text {
+  margin: 0.72rem 0 0;
+  color: #11463a;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(1.21rem, 4.5vw, 1.39rem);
+  line-height: 1.7;
+  letter-spacing: 0.001em;
+}
+
+.neo-card-text strong {
+  color: #e8ff3a;
+  font-weight: 800;
+}
+
+.neo-theme-open-btn {
+  margin: 0.35rem auto 0;
+  width: min(16rem, 100%);
+  background: #de542f;
+  border-color: #de542f;
+  color: #fff7f3;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(183, 74, 40, 0.34);
+}
+
+.neo-theme-open-btn:hover,
+.neo-theme-open-btn:focus-visible {
+  background: #ea6846;
+  border-color: #ea6846;
+  transform: translateY(-1px);
+}
+
+.neo-card-icon {
+  width: 1.34em;
+  height: 1.34em;
+  color: var(--neo-deep);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.neo-card-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2.4;
+}
+
+.neo-slide--signin .neo-slide-inner {
+  padding-top: 0.75rem;
+  justify-content: flex-start;
+}
+
+.neo-signin {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.neo-signin-head {
+  text-align: center;
+}
+
+.neo-signin-icon {
+  width: 8.5rem;
+  height: 8.5rem;
+  margin: 0 auto 0.85rem;
+  display: inline-flex;
+  color: #2b6555;
+}
+
+.neo-signin-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.7;
+}
+
+.neo-slide--signin .neo-title {
+  font-size: clamp(2.65rem, 10.5vw, 3.4rem);
+}
+
+.neo-slide--signin .neo-lead {
+  margin-top: 0.8rem;
+  max-width: 22.8rem;
+  font-size: clamp(1.18rem, 4.3vw, 1.33rem);
+  line-height: 1.62;
+}
+
+.neo-card--signin {
+  margin-top: 0.65rem;
+  padding: 0.95rem 0.95rem 0.8rem;
+}
+
+.neo-language-block {
+  margin-bottom: 0.65rem;
+  text-align: left;
+}
+
+.neo-language-block .field-hint {
+  margin-top: 0.35rem;
+}
+
+.neo-google-btn,
+.neo-guest-btn {
+  border-radius: 0.95rem;
+}
+
+.neo-google-btn {
+  background: #de542f;
+  border-color: #de542f;
+  color: #fff7f3;
+  font-weight: 800;
+  box-shadow:
+    0 8px 18px rgba(183, 74, 40, 0.34),
+    0 0 0 2px rgba(255, 255, 255, 0.35) inset;
+}
+
+.neo-google-btn:hover,
+.neo-google-btn:focus-visible {
+  background: #ea6846;
+  border-color: #ea6846;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 20px rgba(183, 74, 40, 0.4),
+    0 0 0 2px rgba(255, 255, 255, 0.4) inset;
+}
+
+.neo-guest-btn {
+  margin-top: 0.58rem;
+}
+
+.neo-legal {
+  margin-top: 0.68rem;
+  text-align: center;
+  color: #17382f;
+}
+
+.neo-legal a {
+  color: #17382f;
+}
+
+.neo-signin-footnote {
+  margin: auto 0 0;
+  text-align: center;
+  color: var(--neo-copy);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: clamp(0.98rem, 3.4vw, 1.12rem);
+  line-height: 1.55;
+  padding: 0 0.7rem;
+}
+
+.welcome-signin-final-status {
+  min-height: 0;
+}
+
+.welcome-carousel-controls {
+  margin-top: -5.25rem;
+  padding-top: 0;
+  padding-bottom: max(0.1rem, env(safe-area-inset-bottom, 0px));
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  position: relative;
+  z-index: 8;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.2rem;
+  transform: none;
+}
+
+.welcome-carousel-dots {
+  display: none;
+}
+
+.welcome-carousel-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border: 0;
+  background: var(--neo-dot-off);
+  box-shadow: none;
+}
+
+.welcome-carousel-dot.is-active {
+  background: #567968;
+  transform: scale(1);
+}
+
+.welcome-carousel-nav {
+  display: flex;
+  width: calc(100% - 0.6rem);
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: auto;
+}
+
+.welcome-carousel-nav--bottom {
+  width: 100%;
+  min-height: 4.1rem;
+  order: 0;
+  margin-top: -0.55rem;
+}
+
+.welcome-carousel-nav--bottom .welcome-carousel-prev,
+.welcome-carousel-nav--bottom .welcome-carousel-next {
+  min-width: 6.1rem;
+  min-height: 4.1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.95rem;
+  padding-bottom: 0.95rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.welcome-carousel-nav--bottom .welcome-carousel-prev {
+  background: rgba(236, 233, 225, 0.96);
+  border-color: rgba(93, 119, 108, 0.28);
+  color: #2b6555;
+}
+
+.welcome-carousel-nav--bottom .welcome-carousel-next {
+  background: #e9724f;
+  border-color: #e9724f;
+  color: #fff7f3;
+}
+
+.welcome-carousel-nav--bottom .welcome-carousel-prev:hover,
+.welcome-carousel-nav--bottom .welcome-carousel-prev:focus-visible,
+.welcome-carousel-nav--bottom .welcome-carousel-next:hover,
+.welcome-carousel-nav--bottom .welcome-carousel-next:focus-visible {
+  transform: translateY(-1px);
+}
+
+.neo-theme-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.neo-theme-modal.is-open,
+.neo-theme-modal.is-closing {
+  pointer-events: auto;
+}
+
+.neo-theme-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 22, 19, 0.4);
+  opacity: 1;
+  transition: none;
+}
+
+.neo-theme-modal__panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 100%;
+  border-radius: 0;
+  background: #efeee8;
+  box-shadow: none;
+  padding: max(1rem, env(safe-area-inset-top) + 0.4rem) 1.05rem
+    max(1rem, env(safe-area-inset-bottom) + 0.5rem);
+  overflow-y: auto;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.neo-theme-modal.is-open .neo-theme-modal__backdrop {
+  opacity: 1;
+}
+
+.neo-theme-modal.is-open .neo-theme-modal__panel {
+  opacity: 1;
+  transform: none;
+}
+
+.neo-theme-modal__title {
+  margin: 0;
+  color: #de542f;
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 1.35rem;
+}
+
+.neo-theme-modal__lead {
+  margin: 0.35rem 0 0.75rem;
+  color: #275f51;
+  font-size: 0.98rem;
+}
+
+.neo-theme-preview {
+  border-radius: 1rem;
+  background: #f6f4ee;
+  border: 1px solid rgba(66, 96, 84, 0.2);
+  padding: 0.72rem;
+}
+
+.neo-theme-preview__window {
+  border-radius: 0.75rem;
+  background: #ef8f75;
+  padding: 0.48rem;
+}
+
+.neo-theme-preview__bar {
+  width: 44%;
+  height: 0.36rem;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.82);
+  margin-bottom: 0.42rem;
+}
+
+.neo-theme-preview__card {
+  height: 1.95rem;
+  border-radius: 0.62rem;
+  background: rgba(255, 255, 255, 0.72);
+  margin-bottom: 0.38rem;
+}
+
+.neo-theme-preview__line {
+  height: 0.34rem;
+  border-radius: 99px;
+  background: rgba(29, 92, 77, 0.34);
+  margin-top: 0.24rem;
+}
+
+.neo-theme-preview__line--short {
+  width: 62%;
+}
+
+.neo-theme-choice {
+  margin-top: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+  color: #1f5c4d;
+}
+
+.neo-theme-choice input {
+  width: 1rem;
+  height: 1rem;
+}
+
+.neo-theme-choice__name {
+  font-weight: 700;
+}
+
+.neo-theme-choice__badge {
+  margin-left: 0.38rem;
+  vertical-align: middle;
+}
+
+.neo-theme-choice__meta {
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: #547869;
+}
+
+.neo-theme-modal__hint {
+  margin: 0.68rem 0 0;
+  color: #547869;
+  font-size: 0.86rem;
+}
+
+.neo-theme-modal__status {
+  min-height: 1.1rem;
+  margin-top: 0.4rem;
+  color: #1f5c4d;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.neo-theme-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 0.48rem;
+}
+
+.welcome-signin-final-status .status-banner {
+  border-radius: 0.8rem;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.profile-v2.profile-page {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0.55rem 0.92rem calc(0.95rem + env(safe-area-inset-bottom, 0px));
+}
+
+.profile-page .hero.profile-v2-hero {
+  margin: 0.1rem 0 0.7rem;
+}
+
+.profile-page .hero.profile-v2-hero .hero-eyebrow {
+  display: none;
+}
+
+.profile-page .hero.profile-v2-hero .hero-title {
+  margin: 0;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  color: #de6f49;
+  font-size: clamp(3rem, 10.2vw, 3.7rem);
+  line-height: 0.92;
+}
+
+.profile-page .hero.profile-v2-hero .hero-lead {
+  display: none;
+}
+
+.profile-v2-divider {
+  border: 0;
+  height: 1px;
+  background: rgba(40, 75, 67, 0.18);
+  margin: 0.45rem 0 0;
+}
+
+.profile-v2 .card {
+  border: 0;
+  border-radius: 1.15rem;
+  box-shadow: 0 5px 13px rgba(79, 57, 31, 0.11);
+  padding: 0.92rem 0.95rem;
+}
+
+.profile-v2 .profile-v2-identity,
+.profile-v2 .profile-v2-merit-card {
+  background: #ea9b7d;
+}
+
+.profile-v2 .profile-v2-panel,
+.profile-v2 .profile-v2-published-gate {
+  background: #c9add1;
+}
+
+.profile-v2 .profile-v2-section-title {
+  margin-bottom: 0.46rem;
+  color: #214e45;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.95rem, 6.4vw, 2.65rem);
+  line-height: 0.92;
+}
+
+.profile-v2 .profile-v2-identity-grid {
+  display: grid;
+  grid-template-columns: 5.8rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.95rem;
+}
+
+.profile-v2 .profile-v2-identity .profile-hero-ring {
+  width: 5rem;
+  height: 5rem;
+}
+
+.profile-v2 .profile-v2-field label {
+  color: #214e45;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.95rem, 6.4vw, 2.65rem);
+  line-height: 0.92;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  margin-bottom: 0.2rem;
+}
+
+.profile-v2 .input-grow,
+.profile-v2 input[type="text"].input-grow,
+.profile-v2 input[type="number"].input-grow,
+.profile-v2 textarea.input-grow {
+  background: #e3dceb;
+  border: 1px solid rgba(92, 73, 101, 0.22);
+  color: #264f46;
+  border-radius: 0.68rem;
+  font-size: 1.02rem;
+  min-height: 2.2rem;
+  padding: 0.42rem 0.72rem;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  box-shadow: none;
+}
+
+.profile-v2 .profile-v2-identity #profile-display-name {
+  padding-top: 0.56rem;
+  padding-bottom: 0.28rem;
+  line-height: 1.05;
+}
+
+.profile-v2 .profile-v2-identity .profile-v2-section-title {
+  display: none;
+}
+
+.profile-v2 .profile-v2-identity {
+  padding: 0.78rem 0.92rem 0.74rem;
+}
+
+.profile-v2 .profile-v2-identity-fields {
+  padding-top: 0.18rem;
+}
+
+.profile-v2 .profile-v2-identity .field-hint {
+  margin-top: 0.34rem;
+  font-size: 0.68rem;
+  line-height: 1.22;
+  font-style: italic;
+}
+
+.profile-v2 .field-hint,
+.profile-v2 .profile-v2-merit-caption,
+.profile-v2 .profile-theme-caption {
+  color: #264f46;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.95rem;
+}
+
+.profile-v2 .btn {
+  border-radius: 0.6rem;
+  box-shadow: none;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.profile-v2 .btn.btn-secondary {
+  background: #d7d1de;
+  border: 1px solid rgba(96, 78, 106, 0.2);
+  color: #2b5349;
+  box-shadow: 0 3px 8px rgba(79, 57, 31, 0.12);
+}
+
+.profile-v2 .profile-v2-merit-row {
+  align-items: flex-end;
+}
+
+.profile-v2 .profile-v2-merit-value {
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 3.5rem;
+  line-height: 0.8;
+  color: #1f4d43;
+}
+
+.profile-v2 .profile-v2-account {
+  background: #d7d1de;
+  border: 1px solid rgba(96, 78, 106, 0.2);
+  color: #2f544c;
+  border-radius: 0.58rem;
+  box-shadow: 0 3px 8px rgba(79, 57, 31, 0.1);
+}
+
+.profile-v2 #profile-language-open,
+.profile-v2 .profile-theme-pill {
+  background: #d7d1de;
+  border: 1px solid rgba(96, 78, 106, 0.2);
+  color: #2f544c;
+  box-shadow: 0 3px 8px rgba(79, 57, 31, 0.1);
+}
+
+.profile-v2 .profile-theme-pill:has(input:checked) {
+  background: #4f7f75;
+  border-color: #4f7f75;
+  color: #f5f7ff;
+  box-shadow: 0 8px 16px rgba(45, 77, 70, 0.24);
+}
+
+.profile-v2 .profile-theme-pill:has(input:disabled) {
+  opacity: 0.62;
+  box-shadow: none;
+}
+
+.profile-v2 .profile-welcome-toggle__checkbox {
+  border-color: rgba(102, 82, 125, 0.36);
+  background: #ddd5e7;
+}
+
+.profile-v2 .profile-welcome-toggle__checkbox::before {
+  background: #fff8ef;
+  box-shadow: 0 1px 4px rgba(67, 52, 87, 0.35);
+}
+
+.profile-v2 .profile-welcome-toggle__checkbox:checked {
+  background: #4f7f75;
+  border-color: #4f7f75;
+}
+
+.profile-v2 .profile-v2-merit-how-summary {
+  background: #d7d1de;
+  border: 1px solid rgba(96, 78, 106, 0.2);
+  border-radius: 0.58rem;
+  color: #2f544c;
+  padding: 0.34rem 0.72rem;
+  display: inline-block;
+  box-shadow: 0 3px 8px rgba(79, 57, 31, 0.1);
+}
+
+.profile-v2 .profile-v2-signout {
+  color: #dc241a;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.55rem;
+  line-height: 1;
+  border: 1px solid rgba(220, 36, 26, 0.26);
+  background: rgba(255, 251, 240, 0.9);
+  box-shadow: 0 4px 10px rgba(79, 57, 31, 0.12);
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.85rem;
+}
+
+.profile-v2 .profile-v2-signout:hover,
+.profile-v2 .profile-v2-signout:focus-visible {
+  background: rgba(220, 36, 26, 0.08);
+  border-color: rgba(220, 36, 26, 0.16);
+}
+
+.leaderboard-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0.55rem 0.92rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  color: #224e45;
+}
+
+.leaderboard-hero--neo {
+  border-bottom: 0;
+  margin-bottom: 0.7rem;
+  padding: 0.55rem 0 0.25rem;
+}
+
+.leaderboard-hero--neo .hero-eyebrow {
+  display: none;
+}
+
+.leaderboard-hero--neo .hero-title {
+  margin: 0;
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(3rem, 10vw, 3.9rem);
+  line-height: 0.9;
+}
+
+.leaderboard-neo-sub {
+  margin: 0.38rem 0 0;
+  color: #2c564d;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.leaderboard-neo-block {
+  margin-top: 0.62rem;
+}
+
+.leaderboard-page--neo #leaderboard-neo-content .leaderboard-neo-block--hydrated {
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  animation: leaderboard-neo-block-enter 300ms cubic-bezier(0.22, 0.61, 0.36, 1)
+    forwards;
+  animation-delay: calc(min(var(--leaderboard-enter-index, 0), 6) * 56ms);
+}
+
+@keyframes leaderboard-neo-block-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.leaderboard-neo-title {
+  margin: 0 0 0.45rem;
+  color: #234f45;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.1rem, 7vw, 2.9rem);
+  line-height: 0.92;
+}
+
+.leaderboard-neo-you {
+  background: #ea9b7d;
+  border-radius: 1.15rem;
+  padding: 0.72rem 0.84rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.66rem;
+  box-shadow: 0 5px 12px rgba(79, 57, 31, 0.12);
+}
+
+.leaderboard-neo-you__avatar-wrap,
+.leaderboard-neo-you__avatar {
+  width: 3.05rem;
+  height: 3.05rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.leaderboard-neo-you__meta {
+  min-width: 0;
+}
+
+.leaderboard-neo-you__rankline,
+.leaderboard-neo-you__meritline {
+  margin: 0;
+  color: #214f45;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.leaderboard-neo-you__points {
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  color: #1f4d43;
+  font-size: 3.8rem;
+  line-height: 0.8;
+}
+
+.leaderboard-neo-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.leaderboard-neo-podium__card {
+  background: #ea9b7d;
+  border-radius: 1.1rem;
+  padding: 0.56rem 0.45rem;
+  box-shadow: 0 5px 12px rgba(79, 57, 31, 0.12);
+  text-align: center;
+}
+
+.leaderboard-neo-podium__avatar {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.leaderboard-neo-podium__name,
+.leaderboard-neo-podium__pts,
+.leaderboard-neo-podium__rank {
+  margin: 0;
+  color: #204d43;
+}
+
+.leaderboard-neo-podium__name {
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.leaderboard-neo-podium__pts {
+  font-size: 0.55rem;
+  margin-top: 0.12rem;
+}
+
+.leaderboard-neo-podium__rank {
+  margin-top: 0.06rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 2rem;
+  line-height: 0.8;
+}
+
+.leaderboard-neo-list-card {
+  background: #ea9b7d;
+  border-radius: 1.15rem;
+  padding: 0.5rem 0.55rem;
+  box-shadow: 0 5px 12px rgba(79, 57, 31, 0.12);
+}
+
+.leaderboard-neo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.52rem;
+}
+
+.leaderboard-neo-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.18rem 0.1rem;
+}
+
+.leaderboard-neo-row__rank,
+.leaderboard-neo-row__name,
+.leaderboard-neo-row__merits,
+.leaderboard-neo-row__trend {
+  color: #204d43;
+}
+
+.leaderboard-neo-row__rank {
+  font-weight: 800;
+}
+
+.leaderboard-neo-row__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.leaderboard-neo-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-neo-row__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.leaderboard-neo-row__merits {
+  font-size: 0.78rem;
+}
+
+.leaderboard-neo-row__trend {
+  font-size: 1.15rem;
+  line-height: 1;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.create-mode-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0.58rem 0.92rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  color: #214f45;
+}
+
+.create-mode-hero--neo {
+  border-bottom: 0;
+  margin-bottom: 0.7rem;
+  padding: 0.45rem 0 0.15rem;
+}
+
+.create-mode-hero--neo .hero-title {
+  margin: 0;
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(3rem, 10vw, 3.9rem);
+  line-height: 0.92;
+}
+
+.create-mode-hero__sub {
+  margin: 0.45rem 0 0;
+  color: #2b564d;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.create-mode-grid--neo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.create-mode-card--neo {
+  position: relative;
+  border-radius: 1.25rem;
+  border: 1.6px solid rgba(195, 101, 68, 0.12);
+  background: #ea8f73;
+  box-shadow: 0 6px 14px rgba(79, 57, 31, 0.14);
+  padding: 0.84rem 0.78rem 0.74rem;
+  min-height: 10.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-decoration: none;
+}
+
+.create-mode-card--neo.create-mode-card--locked {
+  opacity: 1;
+}
+
+.create-mode-card--neo .create-mode-card__title {
+  margin: 0;
+  color: #1f4d43;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 2.16rem;
+  line-height: 0.9;
+}
+
+.create-mode-card--neo .create-mode-card__desc {
+  margin: 0.6rem 0 0;
+  max-width: 15.8rem;
+  color: #1f4d43;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.75;
+}
+
+.create-mode-card--neo .create-mode-card__squiggle {
+  margin: 0.58rem 0 0;
+  color: #f5e4d7;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.create-mode-card--neo .create-mode-card__cta {
+  margin: 0.26rem 0 0;
+  color: #1f4d43;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.create-mode-card--neo .create-mode-card__cta--disabled {
+  color: rgba(31, 77, 67, 0.9);
+}
+
+.create-mode-card__hlogo {
+  position: absolute;
+  right: 0.58rem;
+  bottom: 0.55rem;
+  width: 7.6rem;
+  color: #1f4d43;
+}
+
+.create-mode-hlogo__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+a.create-mode-card--neo:hover,
+a.create-mode-card--neo:focus-visible {
+  transform: none;
+  box-shadow: 0 6px 14px rgba(79, 57, 31, 0.14);
+}
+
+.create-list-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding-bottom: calc(0.95rem + env(safe-area-inset-bottom, 0px));
+}
+
+.create-list-page--neo .create-list-title--neo {
+  margin-top: 0.4rem;
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.5rem, 9vw, 3.3rem);
+  line-height: 0.9;
+}
+
+.create-list-page--neo .create-list-form--neo {
+  border-radius: 1.22rem;
+  background: #f4ebdc;
+  border: 1px solid rgba(190, 129, 95, 0.26);
+}
+
+.create-map-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.create-map-page--neo .hero-eyebrow {
+  color: #2a4f46;
+  letter-spacing: 0.18em;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.create-map-hero--neo .hero-title {
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(3rem, 10vw, 3.9rem);
+  line-height: 0.92;
+}
+
+.create-map-hero--neo .hero-lead {
+  color: #2b5248;
+  font-size: 0.74rem;
+  line-height: 1.58;
+  margin-top: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.create-map-search-section--neo .create-map-toolbar {
+  border-radius: 1.16rem;
+  border: 1px solid rgba(113, 95, 134, 0.3);
+  background: linear-gradient(160deg, #ddd4e8 0%, #d7cce4 100%);
+  box-shadow: 0 8px 18px rgba(70, 55, 90, 0.16);
+  padding: 0.8rem 0.78rem 0.88rem;
+}
+
+.create-map-search-section--neo .section-title {
+  color: #264c45;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.25rem, 7.8vw, 2.95rem);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+}
+
+.create-map-search-section--neo .create-map-toolbar input[type="search"] {
+  border-radius: 0.78rem;
+  background: #f4f0f8;
+  border: 1px solid rgba(118, 100, 140, 0.28);
+  color: #204a44;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+.create-map-search-section--neo .create-map-toolbar .btn-primary {
+  background: #315f56;
+  border-color: #315f56;
+  color: #f6f7ff;
+  box-shadow: 0 8px 16px rgba(37, 73, 66, 0.24);
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-weight: 700;
+}
+
+.create-map-search-section--neo .create-map-locate-full {
+  background: #e8e2f1;
+  border-color: rgba(113, 95, 134, 0.26);
+  color: #2a534b;
+  font-weight: 700;
+}
+
+.create-map-search-section--neo .create-map-results {
+  border-radius: 0.92rem;
+  border: 1px solid rgba(118, 100, 140, 0.26);
+  background: rgba(243, 238, 249, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  padding: 0.35rem;
+  max-height: 16.8rem;
+}
+
+.create-map-search-section--neo .create-map-result-item {
+  border: 1px solid rgba(118, 100, 140, 0.24);
+  border-radius: 0.82rem;
+  background: #ece5f4;
+  color: #224d45;
+  margin-bottom: 0.36rem;
+  padding: 0.7rem 0.76rem;
+}
+
+.create-map-search-section--neo .create-map-result-item:last-child {
+  margin-bottom: 0;
+}
+
+.create-map-search-section--neo .create-map-result-item:hover {
+  background: #e2d8ee;
+}
+
+.create-map-search-section--neo .create-map-result-item strong {
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
+}
+
+.create-map-search-section--neo .create-map-result-sub {
+  color: #315850;
+  font-size: 0.69rem;
+}
+
+.create-map-fs--neo .create-map-fs-top {
+  background: #f1edf5;
+}
+
+/* Sheet panel is a transparent layout shell now (see design.css) — each
+   child block (head text, photo card, form fields) carries its own
+   surface so they all align to the same 14px outer margin. The neo
+   surface fill is therefore not applied here anymore. */
+
+.create-map-fs--neo .create-map-fs-top {
+  border-bottom-color: rgba(113, 95, 134, 0.28);
+}
+
+.create-map-fs--neo .create-map-shrink-btn.btn.btn-ghost {
+  border-color: rgba(113, 95, 134, 0.28);
+  background: #e6deef;
+  color: #295149;
+}
+
+.create-map-fs--neo .create-map-fs-title {
+  color: #295149;
+  font-size: 1.01rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.create-map-fs--neo .create-map-fs-hint {
+  background: #f1edf5;
+  border-bottom-color: rgba(113, 95, 134, 0.24);
+  color: #365f56;
+  font-size: 0.69rem;
+  line-height: 1.42;
+}
+
+.create-map-fs--neo .create-map-checkpoint-scroll > .create-map-fs-map-host {
+  margin-bottom: 0.88rem;
+  border-radius: 1.04rem;
+}
+
+/* Removed the inner-panel rounded card border — sheet is now a transparent
+   shell so every child grid sits at the same 14px outer margin as the
+   hint + map. Each child (photo card, form fields) carries its own
+   surface and matches that width. */
+
+.create-map-fs--neo .sheet-kicker {
+  color: #2a5148;
+}
+
+.create-map-fs--neo .sheet-coords {
+  color: #2a5148;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.create-map-fs--neo .sheet-field label {
+  color: #2a5148;
+}
+
+.create-map-fs--neo .sheet-title {
+  color: #1f4d43;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2.08rem, 7vw, 2.8rem);
+}
+
+.create-map-fs--neo .photo-drop {
+  border-radius: 1rem;
+  background: #e8e1f1;
+  border: 1px dashed rgba(94, 80, 123, 0.34);
+}
+
+.create-map-fs--neo .photo-drop-title {
+  color: #204d43;
+}
+
+.create-map-fs--neo .photo-drop-sub {
+  color: #2f584f;
+}
+
+.create-map-fs--neo .sheet-form input[type="text"],
+.create-map-fs--neo .sheet-form input[type="search"],
+.create-map-fs--neo .sheet-form input[type="number"],
+.create-map-fs--neo .sheet-form textarea {
+  background: #f4f0f8;
+  border: 1px solid rgba(118, 100, 140, 0.26);
+  color: #224d45;
+}
+
+.create-map-fs--neo .sheet-submit.btn-primary {
+  background: #315f56;
+  border-color: #315f56;
+  color: #f6f7ff;
+  box-shadow: 0 8px 16px rgba(37, 73, 66, 0.24);
+}
+
+.create-map-fs--neo .create-map-fs-map-host .leaflet-control-zoom.leaflet-bar {
+  border: 1px solid rgba(113, 95, 134, 0.32);
+  border-radius: 0.88rem;
+  box-shadow: 0 8px 18px rgba(58, 43, 78, 0.24);
+  overflow: hidden;
+}
+
+.create-map-fs--neo .create-map-fs-map-host .leaflet-control-zoom a {
+  background: #efe8f6;
+  color: #2d554d;
+  border-bottom-color: rgba(113, 95, 134, 0.22);
+}
+
+.create-map-fs--neo .create-map-fs-map-host .leaflet-control-zoom a:hover {
+  background: #e1d8ed;
+  color: #214a43;
+}
+
+.profile-v2 .profile-v2-published-gate .btn-secondary {
+  background: linear-gradient(165deg, #d7bddf 0%, #cfb2d8 100%);
+  border: 1px solid rgba(165, 115, 142, 0.42);
+  color: #1f544a;
+  border-radius: 1rem;
+  min-height: 3.7rem;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.5rem, 5.1vw, 1.95rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 16px rgba(87, 63, 102, 0.2);
+}
+
+.profile-published-sheet {
+  background: rgba(25, 20, 15, 0.34);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.profile-published-sheet__backdrop {
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+
+.profile-published-sheet__panel {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  min-height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.profile-published-sheet__head {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.05rem);
+  background: #f4ebdc;
+}
+
+.profile-published-sheet__panel .profile-published-sheet__title {
+  font-size: clamp(2.15rem, 7.6vw, 2.8rem);
+  color: #214f45;
+}
+
+.profile-published-sheet__lead {
+  color: #2c564d;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  background: #f4ebdc;
+}
+
+.profile-published-sheet__body {
+  background: #f4ebdc;
+}
+
+.profile-published-sheet__close.btn.btn-secondary {
+  background: #6b5540;
+  border: 1px solid rgba(76, 57, 40, 0.35);
+  color: #fff7ea;
+  box-shadow: 0 6px 14px rgba(69, 50, 35, 0.24);
+}
+
+.run-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  color: #214f45;
+  padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+}
+
+.run-page--neo .h1 {
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.run-page--neo .run-timer-bar--neo {
+  background: rgba(190, 129, 95, 0.22);
+  border-radius: 999px;
+}
+
+.run-page--neo .run-checks-card--neo {
+  border-radius: 1.2rem;
+  background: #f4ebdc;
+  border: 1px solid rgba(190, 129, 95, 0.22);
+}
+
+.hunt-review-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  color: #214f45;
+  padding-bottom: calc(0.92rem + env(safe-area-inset-bottom, 0px));
+}
+
+.hunt-review-page--neo .h1 {
+  color: #de6f49;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.hunt-review-page--neo .hunt-review-run-card,
+.hunt-review-page--neo .hunt-review-official-card {
+  background: #f4ebdc;
+  border: 1px solid rgba(190, 129, 95, 0.22);
+  border-radius: 1.2rem;
+}
+
+.map-page--neo {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.map-page--neo .map-hero--neo .hero-title {
+  color: #2b534b;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+}
+
+.map-page--neo .map-wrap--neo {
+  border-radius: 1.2rem;
+  border: 1px solid rgba(113, 95, 134, 0.24);
+  background: #ece3f4;
+}
+
+.map-page--neo .map-hero--neo .hero-lead,
+.map-page--neo .card-meta {
+  color: #355d55;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+}
+
+.profile-published-sheet__panel.card {
+  border-radius: 0;
+  border: 0;
+  background: #f4ebdc;
+}
+
+.profile-published-row {
+  border-radius: 0.94rem;
+  background: rgba(234, 155, 125, 0.23);
+  border: 1px solid rgba(190, 129, 95, 0.2);
+}
+
+.profile-published-actions .btn-small {
+  min-height: 2.35rem;
+  border-radius: 0.92rem;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.profile-published-actions .btn-secondary {
+  background: #f4efe6;
+  border: 1px solid rgba(170, 142, 115, 0.35);
+  color: #264f46;
+}
+
+.profile-published-actions .profile-published-delete.btn-danger {
+  background: #b24b50;
+  border: 1px solid rgba(133, 50, 55, 0.44);
+  color: #fff8ef;
+}
+
+.neo-saved-page .neo-hunts-title {
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  margin: -0.72rem 0 0.2rem;
+  font-size: clamp(3rem, 10vw, 3.9rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+}
+
+.neo-saved-page .neo-saved-sub {
+  margin: 0.1rem 0 0;
+  color: #2c564d;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.neo-saved-page .neo-saved-sub:first-of-type {
+  margin: -0.36rem 0 0.05rem;
+}
+
+.neo-view-toggle--saved {
+  margin-top: 20px;
+  margin-bottom: 0.82rem;
+}
+
+.neo-saved-page .neo-hunts-mode-stage {
+  margin-top: 0.4rem;
+  padding-bottom: 1.2rem;
+}
+
+.neo-saved-page #favorited-feed {
+  margin-top: 0.72rem;
+  padding-bottom: 1.2rem;
+}
+
+.neo-saved-page .neo-hunt-card__title {
+  font-weight: 800;
+}
+
+.neo-saved-filters {
+  margin-top: 0.78rem;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.neo-saved-chip {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(53, 84, 73, 0.2);
+  background: rgba(250, 243, 232, 0.9);
+  color: #2e5a50;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 0.43rem 0.82rem;
+}
+
+.neo-saved-chip.is-active {
+  border-color: transparent;
+  background: #2f5a4e;
+  color: #fef5df;
+}
+
+.neo-saved-when {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 0.16rem 0.5rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.modal-dialog,
+.modal-dialog.profile-avatar-modal,
+.modal-dialog.report-hunt-dialog,
+.modal-dialog.language-picker-modal {
+  border-radius: 1.22rem;
+  border: 1px solid rgba(173, 127, 95, 0.3);
+  background: #f4ece0;
+  color: #214f45;
+  box-shadow: 0 18px 36px rgba(52, 36, 22, 0.22);
+}
+
+.modal-backdrop {
+  background: rgba(39, 31, 23, 0.32);
+  backdrop-filter: blur(2.2px);
+  -webkit-backdrop-filter: blur(2.2px);
+}
+
+.modal-dialog-title {
+  color: #214f45;
+  font-family: "Barlow Condensed", "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(2rem, 6.8vw, 2.8rem);
+  line-height: 0.95;
+}
+
+.modal-dialog-text {
+  color: #365f56;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.modal-dialog-actions {
+  gap: 0.68rem;
+}
+
+.modal-dialog .btn {
+  border-radius: 0.9rem;
+  min-height: 3.25rem;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.modal-dialog .btn.btn-ghost {
+  background: #efe7dc;
+  border-color: rgba(173, 127, 95, 0.28);
+  color: #2a5a50;
+}
+
+.modal-dialog .btn.btn-primary {
+  background: #6b523b;
+  border-color: #6b523b;
+  color: #fff7ee;
+  box-shadow: 0 8px 18px rgba(59, 45, 31, 0.2);
+}
+
+.modal-dialog.profile-avatar-modal .profile-avatar-grid--modal {
+  gap: 0.55rem;
+}
+
+.modal-dialog.profile-avatar-modal .profile-avatar-choice {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(173, 127, 95, 0.26);
+  background: #f7f1e6;
+}
+
+.modal-dialog.profile-avatar-modal .profile-avatar-choice.is-selected {
+  border-color: #6b523b;
+  box-shadow: 0 0 0 2px rgba(107, 82, 59, 0.25);
+}
+
+.modal-dialog.report-hunt-dialog .report-hunt-details {
+  background: #f7f1e6;
+  border-color: rgba(173, 127, 95, 0.26);
+}
+
+.modal-dialog.report-hunt-dialog .report-hunt-option input[type="radio"] {
+  accent-color: #6b523b;
+}
+
+.modal-dialog.language-picker-modal .language-picker-option {
+  border-radius: 0.72rem;
+  border-color: rgba(173, 127, 95, 0.24);
+}
+
+.modal-dialog.language-picker-modal .language-picker-option.is-selected {
+  border-color: #6b523b;
+  background: rgba(107, 82, 59, 0.12);
+}
+
+@media (max-height: 770px) {
+  .neo-slide-inner {
+    justify-content: flex-start;
+    padding-top: 0.25rem;
+  }
+
+  .neo-logo {
+    margin-bottom: 1rem;
+  }
+
+  .neo-card-title {
+    font-size: clamp(1.55rem, 6.1vw, 1.96rem);
+  }
+
+  .neo-card-text {
+    font-size: clamp(1.08rem, 4.1vw, 1.24rem);
+    line-height: 1.52;
+  }
+}
+
+/* ── Dark-mode patches for components that ship hardcoded light colors ────
+   Neo-design.css writes warm cream/teal values directly. design.css's dark
+   tokens only swap the *panel* surface, leaving inner buttons + chips with
+   their light-mode bg + dark-mode text → unreadable. Override below. */
+
+html[data-theme="dark"] .modal-dialog,
+html[data-theme="dark"] .modal-dialog.profile-avatar-modal,
+html[data-theme="dark"] .modal-dialog.report-hunt-dialog,
+html[data-theme="dark"] .modal-dialog.language-picker-modal {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="dark"] .modal-dialog-title,
+html[data-theme="dark"] .ds-modal__title {
+  color: var(--text);
+}
+
+html[data-theme="dark"] .modal-dialog-text,
+html[data-theme="dark"] .ds-modal__text {
+  color: var(--text-muted);
+}
+
+/* Icon disc — lift the warm tint so the glyph reads against the dark panel. */
+html[data-theme="dark"] .ds-modal__icon {
+  background: color-mix(in srgb, var(--accent) 30%, var(--surface-2));
+  color: var(--accent);
+}
+
+/* Primary CTA — use the accent fill with dark text so it pops on the panel.
+   `.btn.btn-primary` (design.css) flips text to var(--bg) in dark mode, but
+   neo-design's `.modal-dialog .btn.btn-primary` (specificity 0,3,0) was
+   forcing #6b523b bg → dark text on dark bg. Re-anchor to the token bg. */
+html[data-theme="dark"] .modal-dialog .btn.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+html[data-theme="dark"] .modal-dialog .btn.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Ghost / secondary — drop the cream fill, sit on the dark panel cleanly. */
+html[data-theme="dark"] .modal-dialog .btn.btn-ghost,
+html[data-theme="dark"] .modal-dialog .btn.btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+html[data-theme="dark"] .modal-dialog .btn.btn-ghost:hover,
+html[data-theme="dark"] .modal-dialog .btn.btn-secondary:hover {
+  background: color-mix(in srgb, var(--surface-2) 70%, var(--text) 12%);
+}
+
+/* Hunts / Saved Grid↔List view toggle —
+   light pill (cream bg + dark-teal text) was loud against the dark page bg.
+   Move to a surface chip with inverted active state. */
+html[data-theme="dark"] .neo-view-toggle {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] .neo-view-toggle__btn {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .neo-view-toggle__btn.is-active {
+  background: var(--text);
+  color: var(--bg);
+}

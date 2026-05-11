@@ -1,0 +1,484 @@
+:root {
+  --motion-fast: 180ms;
+  --motion-base: 320ms;
+  --motion-slow: 460ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0.78, 0.2, 1);
+  --motion-ease-emph: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#app-main .page-transition-root {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  filter: blur(1.5px);
+  will-change: opacity, transform, filter;
+}
+
+#app-main .page-transition-root.is-route-entered {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+  transition:
+    opacity var(--motion-base) var(--motion-ease-standard),
+    transform var(--motion-base) var(--motion-ease-emph),
+    filter var(--motion-base) var(--motion-ease-standard);
+}
+
+#app-main .page-transition-root.is-route-leaving {
+  opacity: 0;
+  transform: translate3d(0, -6px, 0);
+  filter: blur(1.5px);
+  transition:
+    opacity var(--motion-fast) var(--motion-ease-standard),
+    transform var(--motion-fast) var(--motion-ease-standard),
+    filter var(--motion-fast) var(--motion-ease-standard);
+}
+
+/* Hold children at their entered positions during leave. Without this,
+   removing .is-route-entered snaps motion-title (translateY 10px) and
+   motion-content (translateY 14px) back to their initial down-offset
+   base state, which reads as a jolt downward on top of the parent's
+   up-fade — the perceived "下移" jank during dock toggles. */
+#app-main .page-transition-root.is-route-leaving .motion-title,
+#app-main .page-transition-root.is-route-leaving .motion-content {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: none;
+}
+
+#app-main .page-transition-root .motion-title {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+
+#app-main .page-transition-root.is-route-entered .motion-title {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--motion-base) var(--motion-ease-standard) 40ms,
+    transform var(--motion-base) var(--motion-ease-emph) 40ms;
+}
+
+#app-main .page-transition-root .motion-content {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+}
+
+#app-main .page-transition-root.is-route-entered .motion-content {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--motion-slow) var(--motion-ease-standard) 150ms,
+    transform var(--motion-slow) var(--motion-ease-emph) 150ms;
+}
+
+img.motion-image {
+  opacity: 0;
+  transform: scale(1.018);
+  filter: blur(3px);
+}
+
+img.motion-image.is-loaded {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--motion-base) var(--motion-ease-standard),
+    transform var(--motion-slow) var(--motion-ease-emph),
+    filter var(--motion-base) var(--motion-ease-standard);
+}
+
+/* Hero avatar opts out of the global motion-image scale/blur — the pop-in below
+   is the sole entrance, so we only fade-in on load (matches the backup's calm
+   opacity-only style). */
+img.profile-hero-img.motion-image {
+  transform: none;
+  filter: none;
+}
+
+img.profile-hero-img.motion-image.is-loaded {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: opacity 380ms var(--motion-ease-standard);
+}
+
+@keyframes profile-avatar-enter-pop {
+  from {
+    opacity: 0;
+    transform: translateY(0.42rem) scale(0.93);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Pop-in fires on the ring's direct children. `animation: both` holds the
+   end-frame so the img doesn't snap back if its load event arrives mid-anim. */
+.profile-hero-ring.is-avatar-entering .profile-hero-img,
+.profile-hero-ring.is-avatar-entering .profile-hero-blank {
+  animation: profile-avatar-enter-pop 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-main .page-transition-root,
+  #app-main .page-transition-root.is-route-entered,
+  #app-main .page-transition-root.is-route-leaving,
+  #app-main .page-transition-root .motion-title,
+  #app-main .page-transition-root .motion-content,
+  img.motion-image,
+  img.motion-image.is-loaded,
+  .profile-hero-ring.is-avatar-entering .profile-hero-img,
+  .profile-hero-ring.is-avatar-entering .profile-hero-blank {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Unified interaction mechanics (ported from the Friend sub-app).
+ * Colors, icons, and fonts are NOT touched — only the transition
+ * cadence, tap feedback, dock entrance, and per-child stagger.
+ * Keeps the main app's palette + iconography + typography intact.
+ * ────────────────────────────────────────────────────────── */
+
+/* Spring token reused from tokens.css (--ease-spring) + motion tokens above. */
+:root {
+  --motion-stagger: 42ms;
+}
+
+/* ── Dock entrance ──
+ * The Friend sub-app mounts its dock once so a slide-in keyframe is safe
+ * there. In the main app the shell does `document.body.innerHTML = ...`
+ * on every route change, which would re-fire any animation on .app-dock
+ * and make the whole bar visibly jump on every navigation. We therefore
+ * intentionally DO NOT animate .app-dock here — the dock stays pinned.
+ * (Tap-state transforms on individual items are still wired below.)
+ */
+
+/* ── Dock items: smooth active-state swap + tap press feedback ── */
+/* Override layout.css's `transition: none` with color/transform eases so
+   tapping between tabs fades instead of snapping. Colors stay exactly
+   where layout.css / neo-design.css put them. */
+.mobile-tab,
+.mobile-tab-plus {
+  transition:
+    color var(--motion-fast) var(--motion-ease-standard),
+    transform var(--motion-fast) var(--ease-spring);
+}
+
+.mobile-tab .mobile-tab-icon,
+.mobile-tab .mobile-tab-label,
+.mobile-tab .mobile-tab-caption,
+.mobile-tab-plus .mobile-tab-label,
+.mobile-tab-plus .mobile-tab-caption {
+  transition: color var(--motion-fast) var(--motion-ease-standard);
+}
+
+.mobile-tab-plus-circle {
+  transition:
+    transform var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-base) var(--motion-ease-standard),
+    background var(--motion-base) var(--motion-ease-standard);
+}
+
+/* Scale-press feedback — EXCLUDE .mobile-tab-plus so it doesn't get the
+   generic tab scale AND the plus-circle scale at the same time (which
+   made the FAB visibly jitter on tap). The plus FAB gets its own tiny
+   press state below. */
+.mobile-tab:not(.mobile-tab-plus):active {
+  transform: scale(0.94);
+}
+
+/* Plus FAB: NO transform on ANY state — user repeatedly reported the
+   circle visibly shifts down on click. Kill all movement sources with
+   !important so nothing bubbling from elsewhere (focus-visible, :hover,
+   :active, .is-active) can reintroduce a transform. The feedback is
+   purely color/shadow, handled by the override block below. */
+.mobile-tab-plus,
+.mobile-tab-plus:hover,
+.mobile-tab-plus:focus,
+.mobile-tab-plus:focus-visible,
+.mobile-tab-plus:active,
+.mobile-tab-plus.is-active,
+.mobile-tab-plus .mobile-tab-plus-circle,
+.mobile-tab-plus:hover .mobile-tab-plus-circle,
+.mobile-tab-plus:focus .mobile-tab-plus-circle,
+.mobile-tab-plus:focus-visible .mobile-tab-plus-circle,
+.mobile-tab-plus:active .mobile-tab-plus-circle,
+.mobile-tab-plus.is-active .mobile-tab-plus-circle {
+  transform: none !important;
+}
+
+/* ── Button lift mechanism (hover + press) ── */
+/* Extend components.css's baseline transitions with transform so the
+   existing hover bg/border shift gains a subtle lift, and taps get a
+   press-in feel. Colors + shadows are still owned by components.css. */
+.btn,
+.btn-primary,
+.btn-ghost {
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    transform var(--motion-fast) var(--ease-spring);
+  will-change: transform;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+.btn-primary:hover:not(:disabled) {
+  /* Slightly stronger lift for the primary CTA, matches Friend's .btn-primary.
+     No brightness filter — the existing accent-hover color change in
+     components.css already handles the visible feedback. */
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── List stagger: children of .motion-content cascade in on route enter ── */
+/* Friend uses nth-child(1..7+) — we mirror it here so list cards, forms,
+   and panels feel coherent with the sub-app. Falls back to the single-step
+   .motion-content transition already defined above, which only delays the
+   first child; these rules stack extra delays on siblings 2..7. */
+#app-main .page-transition-root .motion-content > *:nth-child(2) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 1);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(3) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 2);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(4) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 3);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(5) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 4);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(6) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 5);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(7) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 6);
+}
+#app-main .page-transition-root .motion-content > *:nth-child(n + 8) {
+  transition-delay: calc(150ms + var(--motion-stagger) * 7);
+}
+
+/* Reduced motion: suppress the new layer too. */
+@media (prefers-reduced-motion: reduce) {
+  .app-dock,
+  .app-dock-inner,
+  .app-dock-inner--five,
+  .mobile-tab,
+  .mobile-tab-plus,
+  .mobile-tab-plus-circle,
+  .btn,
+  .btn-primary,
+  .btn-ghost {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Dock visual: floating pill (Friend-style) wearing Tourgo's
+ * palette + icons. Colors / fonts / SVGs are NOT touched —
+ * only the container becomes a centered rounded shell with
+ * a blur backdrop + drop shadow, and the active tab gets a
+ * soft accent pill behind its existing icon/label.
+ * ────────────────────────────────────────────────────────── */
+
+.app-dock {
+  /* Drop the solid top-edge bar — the pill floats above content instead. */
+  background: transparent;
+  border-top: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  padding-top: 0.35rem;
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  /* Let taps slip past the transparent gutter to content behind the pill. */
+  pointer-events: none;
+}
+
+.app-dock-inner,
+.app-dock-inner--five {
+  pointer-events: auto;
+  /* Fixed dock size — does NOT scale with viewport width.
+     The design reference is the iPhone 16 Pro content width
+     (`--content-max`, 402px) minus the 1.2rem gutter. On viewports
+     wider than that the dock stays pinned at this size instead of
+     expanding with the page. On viewports narrower than the reference
+     the max-width cap lets it shrink so it never overflows. */
+  width: calc(var(--content-max) - 1.2rem);
+  max-width: calc(100vw - 1.2rem);
+  margin: 0 auto;
+  padding: 0.42rem 0.5rem calc(0.46rem + env(safe-area-inset-bottom, 0px) * 0);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent-soft));
+  /* Radius matches the active-tab chip (neo-design.css sets the chip
+     to 0.95rem). Previously the dock was a full pill (999px) while
+     the chip was a rounded rect — inconsistent. Using the same value
+     keeps both in the same rounded-rectangle family. */
+  border-radius: 0.95rem;
+  background: color-mix(in srgb, var(--surface) 92%, #fff 8%);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
+  backdrop-filter: blur(16px) saturate(1.05);
+  box-shadow:
+    0 18px 32px color-mix(in srgb, var(--text) 14%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent) inset;
+}
+
+/* Dark theme: tone the pill down so it doesn't glow. */
+html[data-theme="dark"] .app-dock-inner,
+html[data-theme="dark"] .app-dock-inner--five {
+  background: color-mix(in srgb, var(--surface) 84%, #000 16%);
+  border-color: color-mix(in srgb, var(--border) 72%, transparent);
+  box-shadow:
+    0 20px 38px rgba(0, 0, 0, 0.45),
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset;
+}
+
+/* Active dock item: soft pill behind the existing icon/label (no icon swap,
+   no color override — layout.css + neo-design.css still own the foreground). */
+.app-dock-inner .mobile-tab.is-active,
+.app-dock-inner--five .mobile-tab.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 80%, transparent);
+  /* Match neo-design.css's chip radius + the outer dock radius. */
+  border-radius: 0.95rem;
+}
+
+/* Keep the plus FAB untouched (already owns its own pill + gradient). */
+.app-dock-inner--five .mobile-tab-plus.is-active {
+  background: transparent;
+}
+
+/* Keep content clear of the floating pill — slightly less padding needed since
+   the pill is now visually detached instead of a full edge-to-edge bar. */
+body:has(.app-dock--five) #app-main.main-wrap:not(.main-wrap--solo) {
+  padding-bottom: 7.25rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Plus FAB — align with the other dock tabs, but more readable.
+ *
+ * User feedback:
+ *   1. Press must NOT translate — change to a highlight swap.
+ *   2. Selected (is-active) must visibly highlight.
+ *   3. Middle `+` glyph was too faint — bump icon contrast + size.
+ *
+ * Strategy:
+ *   - Idle: surface pill + `var(--text)` glyph + shadow (lifted, clear).
+ *   - Hover / active / is-active: swap background to `--accent-soft`,
+ *     icon to `var(--accent)`; shadow deepens slightly. This matches
+ *     the accent-soft pill that regular tabs get when active, so the
+ *     FAB reads as part of the same family.
+ *   - We override layout.css's accent-gradient fills on all three
+ *     states (base, :hover, .is-active).
+ *   - Icon gets a CSS scale to ~120% so the 18px SVG reads as ~22px
+ *     without editing shell.js.
+ * ────────────────────────────────────────────────────────── */
+
+/* FAB circle — IDLE (unselected):
+   - The circle CONTAINER is always visible (surface fill + shadow) so
+     the FAB remains a recognizable floating button.
+   - The GLYPH color matches other unselected tabs: `var(--text-muted)`.
+   - Lifted above the dock line via negative margin-top (per "位置需要
+     在上面"). Hover / selected / pressed states below swap in the
+     accent fill. */
+.app-dock-inner .mobile-tab-plus .mobile-tab-plus-circle,
+.app-dock-inner--five .mobile-tab-plus .mobile-tab-plus-circle {
+  margin-top: -1.15rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow:
+    0 8px 20px color-mix(in srgb, var(--text) 16%, transparent),
+    0 1px 0 color-mix(in srgb, #fff 45%, transparent) inset;
+  transition:
+    background var(--motion-fast) var(--motion-ease-standard),
+    color var(--motion-fast) var(--motion-ease-standard),
+    border-color var(--motion-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-base) var(--motion-ease-standard),
+    filter var(--motion-fast) var(--motion-ease-standard);
+}
+
+/* Bump the `+` glyph so it reads clearly on the accent fill. */
+.app-dock-inner .mobile-tab-plus .mobile-tab-plus-circle svg,
+.app-dock-inner--five .mobile-tab-plus .mobile-tab-plus-circle svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Give the label a little breathing room since the circle is lifted. */
+.app-dock-inner .mobile-tab-plus .mobile-tab-label,
+.app-dock-inner--five .mobile-tab-plus .mobile-tab-label {
+  margin-top: -0.1rem;
+}
+
+/* Hover / selected / pressed — SOLID accent fill + white glyph +
+   lifted shadow. All three states share the same color scheme
+   (per user: "选中和长按颜色都修改成长按的颜色"); press just adds a
+   touch of brightness. No transform anywhere. */
+.app-dock-inner .mobile-tab-plus:hover .mobile-tab-plus-circle,
+.app-dock-inner--five .mobile-tab-plus:hover .mobile-tab-plus-circle,
+.app-dock-inner .mobile-tab-plus.is-active .mobile-tab-plus-circle,
+.app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle {
+  background: linear-gradient(145deg, var(--accent), var(--accent-hover));
+  color: #fdf9f3;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 12px 28px color-mix(in srgb, var(--accent) 46%, transparent),
+    0 0 0 1px color-mix(in srgb, #fff 22%, transparent) inset;
+}
+
+.app-dock-inner .mobile-tab-plus:active .mobile-tab-plus-circle,
+.app-dock-inner--five .mobile-tab-plus:active .mobile-tab-plus-circle {
+  background: linear-gradient(145deg, var(--accent), var(--accent-hover));
+  color: #fdf9f3;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--accent) 52%, transparent),
+    0 0 0 1px color-mix(in srgb, #fff 26%, transparent) inset;
+  filter: brightness(1.04);
+}
+
+/* Dark theme — idle still has a visible circle, just a deeper surface
+   tone + softer shadow so it doesn't glow against the dark dock pill. */
+html[data-theme="dark"] .app-dock-inner .mobile-tab-plus .mobile-tab-plus-circle,
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus .mobile-tab-plus-circle {
+  background: color-mix(in srgb, var(--surface) 84%, #000 16%);
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.5),
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset;
+}
+
+html[data-theme="dark"] .app-dock-inner .mobile-tab-plus:hover .mobile-tab-plus-circle,
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus:hover .mobile-tab-plus-circle,
+html[data-theme="dark"] .app-dock-inner .mobile-tab-plus.is-active .mobile-tab-plus-circle,
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus.is-active .mobile-tab-plus-circle {
+  box-shadow:
+    0 14px 32px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, #fff 18%, transparent) inset;
+}
+
+html[data-theme="dark"] .app-dock-inner .mobile-tab-plus:active .mobile-tab-plus-circle,
+html[data-theme="dark"] .app-dock-inner--five .mobile-tab-plus:active .mobile-tab-plus-circle {
+  box-shadow:
+    0 16px 36px color-mix(in srgb, var(--accent) 60%, transparent),
+    0 0 0 1px color-mix(in srgb, #fff 22%, transparent) inset;
+  filter: brightness(1.06);
+}

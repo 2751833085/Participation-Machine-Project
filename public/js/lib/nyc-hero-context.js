@@ -3,7 +3,6 @@
  * https://open-meteo.com/en/docs (non-commercial / fair use)
  */
 
-import { getAppLanguage } from "./i18n.js";
 
 const NYC_TZ = "America/New_York";
 /** Roughly Midtown — representative for “NYC” weather line */
@@ -138,16 +137,11 @@ const HOME_LOCALIZED_COPY = {
 };
 
 function getHeroLocale() {
-  const lang = getAppLanguage();
-  if (lang === "zh-Hans") return "zh-CN";
-  if (lang === "zh-Hant") return "zh-TW";
-  if (lang === "pt") return "pt-PT";
-  return lang;
+  return "en";
 }
 
 function getCopy() {
-  const lang = getAppLanguage();
-  return HOME_LOCALIZED_COPY[lang] || HOME_LOCALIZED_COPY.en;
+  return HOME_LOCALIZED_COPY.en;
 }
 
 /**
@@ -197,24 +191,54 @@ function celsiusToF(c) {
   return (c * 9) / 5 + 32;
 }
 
+const WEATHER_SHORT_EXACT = new Map([
+  [0, "clear"],
+  [1, "mostlyClear"],
+  [2, "partlyCloudy"],
+  [3, "overcast"],
+  [65, "heavyRain"],
+  [66, "heavyRain"],
+  [67, "heavyRain"],
+]);
+
+const WEATHER_SHORT_RANGES = [
+  [45, 48, "fog"],
+  [51, 55, "drizzle"],
+  [56, 57, "freezingDrizzle"],
+  [61, 64, "rain"],
+  [71, 77, "snow"],
+  [80, 82, "rainShowers"],
+  [85, 86, "snowShowers"],
+  [95, 99, "thunderstorm"],
+];
+
+const WEATHER_HINT_EXACT = new Map([
+  [0, "clear"],
+  [1, "partlyCloudy"],
+  [2, "partlyCloudy"],
+  [3, "overcast"],
+]);
+
+const WEATHER_HINT_RANGES = [
+  [45, 48, "fog"],
+  [51, 57, "drizzle"],
+  [61, 67, "rain"],
+  [71, 77, "snow"],
+  [80, 82, "showers"],
+  [95, Infinity, "storm"],
+];
+
+function weatherRangeKey(code, exactMap, ranges, fallback = null) {
+  if (exactMap.has(code)) return exactMap.get(code);
+  const match = ranges.find(([min, max]) => code >= min && code <= max);
+  return match?.[2] ?? fallback;
+}
+
 /** Short condition label for the eyebrow (WMO code). */
 export function weatherCodeToShortLabel(code) {
   const short = getCopy().shortLabel;
-  const c = code;
-  if (c === 0) return short.clear;
-  if (c === 1) return short.mostlyClear;
-  if (c === 2) return short.partlyCloudy;
-  if (c === 3) return short.overcast;
-  if (c >= 45 && c <= 48) return short.fog;
-  if (c >= 51 && c <= 55) return short.drizzle;
-  if (c >= 56 && c <= 57) return short.freezingDrizzle;
-  if (c >= 61 && c <= 64) return short.rain;
-  if (c === 65 || c === 66 || c === 67) return short.heavyRain;
-  if (c >= 71 && c <= 77) return short.snow;
-  if (c >= 80 && c <= 82) return short.rainShowers;
-  if (c >= 85 && c <= 86) return short.snowShowers;
-  if (c >= 95 && c <= 99) return short.thunderstorm;
-  return short.mixed;
+  const key = weatherRangeKey(code, WEATHER_SHORT_EXACT, WEATHER_SHORT_RANGES, "mixed");
+  return short[key];
 }
 
 /**
@@ -224,39 +248,13 @@ export function weatherCodeToShortLabel(code) {
  */
 export function weatherCodeToHint(code, tempC) {
   const hints = getCopy().hints;
-  const c = code;
   const tempF =
     typeof tempC === "number" && Number.isFinite(tempC)
       ? celsiusToF(tempC)
       : null;
 
-  if (c === 0) {
-    return hints.clear;
-  }
-  if (c === 1 || c === 2) {
-    return hints.partlyCloudy;
-  }
-  if (c === 3) {
-    return hints.overcast;
-  }
-  if (c >= 45 && c <= 48) {
-    return hints.fog;
-  }
-  if (c >= 51 && c <= 57) {
-    return hints.drizzle;
-  }
-  if (c >= 61 && c <= 67) {
-    return hints.rain;
-  }
-  if (c >= 71 && c <= 77) {
-    return hints.snow;
-  }
-  if (c >= 80 && c <= 82) {
-    return hints.showers;
-  }
-  if (c >= 95) {
-    return hints.storm;
-  }
+  const key = weatherRangeKey(code, WEATHER_HINT_EXACT, WEATHER_HINT_RANGES);
+  if (key) return hints[key];
   if (tempF != null && tempF >= 90) {
     return hints.heat;
   }
@@ -308,19 +306,6 @@ export function applyHomeHeroEyebrowDateOnly() {
   el.textContent = getHeroLocale().startsWith("en") ? date.toUpperCase() : date;
 }
 
-function triggerHeroContextEnter(ctxEl) {
-  if (!ctxEl || ctxEl.hidden) return;
-  if (
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
-  ) {
-    return;
-  }
-  ctxEl.classList.remove("hero-context--enter");
-  void ctxEl.offsetWidth;
-  ctxEl.classList.add("hero-context--enter");
-}
-
 /** Shows time + short placeholder until Open-Meteo responds. */
 export function applyHomeHeroContextPlaceholder() {
   const ctxEl = document.getElementById("hero-context");
@@ -328,9 +313,6 @@ export function applyHomeHeroContextPlaceholder() {
   const copy = getCopy();
   ctxEl.textContent = `${formatNYCTimeClock()} · ${copy.cityLabel} — ${copy.checkingSky}`;
   ctxEl.hidden = false;
-  requestAnimationFrame(() => {
-    triggerHeroContextEnter(ctxEl);
-  });
 }
 
 /**

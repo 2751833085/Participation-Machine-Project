@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Tourgo — Main UI</title>
+<meta name="viewport" content="width=1440"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'DM Sans', system-ui, sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="lib/design-canvas.jsx"></script>
+<script type="text/babel" src="lib/ios-frame.jsx"></script>
+<script type="text/babel" src="lib/neo-pages.jsx"></script>
+<script type="text/babel" src="lib/loaders.jsx"></script>
+<script type="text/babel" src="lib/overlays.jsx"></script>
+<script type="text/babel" src="lib/extras.jsx"></script>
+<script type="text/babel" src="lib/main-ui.jsx"></script>
+<script type="text/babel" src="lib/preview-shell.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+function App() {
+  const tourgoFlow = [
+    { id: 'ne-welcome',  label: '01 · Welcome',       C: NeoWelcome },
+    { id: 'ne-login',    label: '02 · Sign in',       C: NeoLogin },
+    { id: 'ne-home',     label: '03 · Hunts home',    C: NeoHome },
+    { id: 'ne-detail',   label: '04 · Hunt detail',   C: NeoChallenge },
+    { id: 'ne-run',      label: '05 · Active run',    C: NeoRun },
+    { id: 'ne-rank',     label: '06 · Leaderboard',   C: NeoLeaderboard },
+    { id: 'ne-profile',  label: '07 · Profile',       C: NeoProfile },
+    { id: 'ne-loading',  label: '08 · Loading',       C: NeoLoadingScreen },
+    { id: 'ne-inline-loading', label: '09 · Loading overlay', C: NeoInlineLoadingPanel },
+    { id: 'ne-daily',    label: '10 · Daily welcome', C: NeoDailyWelcome },
+    { id: 'ne-confirm',  label: '11 · Confirm modal', C: NeoConfirmModal },
+    { id: 'ne-banner',   label: '12 · Top banner',    C: NeoBanner },
+    { id: 'ne-reviews',  label: '13 · Reviews',       C: NeoComments },
+    { id: 'ne-grid',     label: '14 · Grid view',     C: NeoGrid },
+    { id: 'ne-map',      label: '15 · Map explore',   C: NeoMapExplore },
+    { id: 'ne-create-picker', label: '16 · Create menu', C: NeoCreatePicker },
+    { id: 'ne-create',   label: '17 · Create hunt',   C: NeoCreate },
+    { id: 'ne-create-map', label: '18 · Create map sheet', C: NeoCreateMapSheet },
+    { id: 'ne-photo-proof', label: '19 · Photo proof', C: NeoPhotoProof },
+    { id: 'ne-saved',    label: '20 · Saved',         C: NeoSaved },
+    { id: 'ne-admin',    label: '21 · Admin',         C: NeoAdminDashboard },
+    { id: 'ne-profile-menu', label: '22 · Profile menu', C: NeoProfileMenuSheet },
+    { id: 'ne-filter-sheet', label: '23 · Filter sheet', C: NeoFilterSheet },
+    { id: 'ne-report',   label: '24 · Report modal',  C: NeoReportModal },
+    { id: 'ne-publish-success', label: '25 · Publish success', C: NeoPublishSuccess },
+  ];
+
+  const keyboardFlow = [
+    { id: 'ne-login-keyboard', label: '26 · Sign in · keyboard open', C: NeoLogin, keyboard: true },
+    { id: 'ne-map-keyboard', label: '27 · Map search · keyboard open', C: NeoMapExplore, keyboard: true },
+    { id: 'ne-create-keyboard', label: '28 · Create title · keyboard open', C: NeoCreate, keyboard: true },
+    { id: 'ne-report-keyboard', label: '29 · Report details · keyboard open', C: NeoReportModal, keyboard: true, lift: 108 },
+  ];
+
+  return (
+    <DesignCanvas>
+      <DCSection id="overview" title="Tourgo Main UI"
+        subtitle="NeoUI-only main Tourgo app screens. Preview artboards are pure iPhone-ratio app screens without device chrome, dynamic island, status bar, or home indicator.">
+        <DCPostIt>
+          PREVIEW — each artboard is a 390×844 screen crop. The iPhone frame, dynamic island, and bottom home indicator have been removed.
+        </DCPostIt>
+        <DCPostIt>
+          KEYBOARD — input-heavy screens include normal and keyboard-open versions. The keyboard-open versions reserve the lower area for the native iOS keyboard and keep fields visible.
+        </DCPostIt>
+      </DCSection>
+
+      <DCSection id="tourgo-light" title="Tourgo · light"
+        subtitle="Main app UI in light mode, including popup menus and keyboard-open states">
+        {makeArtboards([...tourgoFlow, ...keyboardFlow], false, '-tourgo-l')}
+      </DCSection>
+
+      <DCSection id="tourgo-dark" title="Tourgo · dark"
+        subtitle="Main app UI in mineral graphite dark mode, including popup menus and keyboard-open states">
+        {makeArtboards([...tourgoFlow, ...keyboardFlow], true, '-tourgo-d')}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

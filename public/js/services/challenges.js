@@ -2,9 +2,8 @@
  * Challenges service: CRUD, image upload, Manhattan geo-inference.
  */
 
-import { auth, db, storage } from "../firebase-init.js";
+import { auth, db, storage } from "./firebase.js";
 import { GEO_RESTRICT_MANHATTAN } from "../lib/geo-flags.js";
-import { compressCheckpointImage } from "../image-utils.js";
 import {
   collection,
   deleteDoc,
@@ -29,6 +28,14 @@ import {
 
 export const MAX_SPOTS = 10;
 export const MIN_SPOTS = 1;
+const IMAGE_UTILS_PATH = "../image-utils.js";
+let imageUtilsModule;
+
+async function compressChallengeImage(file) {
+  if (!imageUtilsModule) imageUtilsModule = import(IMAGE_UTILS_PATH);
+  const { compressCheckpointImage } = await imageUtilsModule;
+  return compressCheckpointImage(file);
+}
 
 /* ── Manhattan geo data ── */
 
@@ -50,24 +57,21 @@ export function pointInManhattan(lat, lng) {
   if (!GEO_RESTRICT_MANHATTAN) return true;
 
   if (lat < 40.698 || lat > 40.885) return false;
-
-  let minLng;
-  let maxLng;
-  if (lat < 40.765) {
-    minLng = -74.019 + (lat - 40.704) * 0.00032;
-    maxLng = -73.97;
-  } else if (lat < 40.805) {
-    minLng = -74.016 + (lat - 40.765) * 0.00028;
-    maxLng = -73.935;
-  } else if (lat < 40.84) {
-    minLng = -74.005 + (lat - 40.805) * 0.00022;
-    maxLng = -73.93;
-  } else {
-    minLng = -73.965;
-    maxLng = -73.905;
-  }
-
+  const { minLng, maxLng } = manhattanLngRange(lat);
   return lng >= minLng && lng <= maxLng;
+}
+
+function manhattanLngRange(lat) {
+  if (lat < 40.765) {
+    return { minLng: -74.019 + (lat - 40.704) * 0.00032, maxLng: -73.97 };
+  }
+  if (lat < 40.805) {
+    return { minLng: -74.016 + (lat - 40.765) * 0.00028, maxLng: -73.935 };
+  }
+  if (lat < 40.84) {
+    return { minLng: -74.005 + (lat - 40.805) * 0.00022, maxLng: -73.93 };
+  }
+  return { minLng: -73.965, maxLng: -73.905 };
 }
 
 export const MANHATTAN_CENTROIDS = [
@@ -121,9 +125,6 @@ function sortChallengeDocsNewestFirst(docs) {
 export function watchUserPublishedChallenges(uid, onNext, onError) {
   if (!uid) return () => {};
 
-  let unsub = null;
-  let cancelled = false;
-
   const orderedQ = query(
     collection(db, "challenges"),
     where("createdBy", "==", uid),
@@ -137,52 +138,64 @@ export function watchUserPublishedChallenges(uid, onNext, onError) {
     limit(50),
   );
 
-  function attachFallback() {
-    unsub = onSnapshot(
-      fallbackQ,
-      (snap) => {
-        if (cancelled) return;
-        const sorted = sortChallengeDocsNewestFirst(snap.docs).slice(0, 50);
-        onNext({ docs: sorted });
-      },
-      (err) => onError(err),
-    );
-  }
+  return attachUserPublishedWatch(orderedQ, fallbackQ, onNext, onError);
+}
 
-  unsub = onSnapshot(
+function attachUserPublishedWatch(orderedQ, fallbackQ, onNext, onError) {
+  const state = { unsub: null, cancelled: false };
+  state.unsub = onSnapshot(
     orderedQ,
     (snap) => {
-      if (cancelled) return;
+      if (state.cancelled) return;
       onNext(snap);
     },
     (err) => {
-      console.warn("[challenges] watchUserPublishedChallenges ordered query", err);
-      if (cancelled) return;
-      const code = err?.code || "";
-      const msg = String(err?.message || "");
-      const indexMissing =
-        code === "failed-precondition" ||
-        msg.includes("index") ||
-        msg.includes("requires an index");
-      if (!indexMissing) {
-        onError(err);
-        return;
-      }
-      if (unsub) {
-        unsub();
-        unsub = null;
-      }
-      attachFallback();
+      handleUserPublishedWatchError(state, fallbackQ, onNext, onError, err);
     },
   );
+  return () => stopUserPublishedWatch(state);
+}
 
-  return () => {
-    cancelled = true;
-    if (unsub) {
-      unsub();
-      unsub = null;
-    }
-  };
+function handleUserPublishedWatchError(state, fallbackQ, onNext, onError, err) {
+  console.warn("[challenges] watchUserPublishedChallenges ordered query", err);
+  if (state.cancelled) return;
+  if (!isMissingIndexError(err)) {
+    onError(err);
+    return;
+  }
+  stopActiveUserPublishedWatch(state);
+  state.unsub = attachUserPublishedFallback(fallbackQ, state, onNext, onError);
+}
+
+function isMissingIndexError(err) {
+  const code = err?.code || "";
+  const msg = String(err?.message || "");
+  return code === "failed-precondition" ||
+    msg.includes("index") ||
+    msg.includes("requires an index");
+}
+
+function attachUserPublishedFallback(fallbackQ, state, onNext, onError) {
+  return onSnapshot(
+    fallbackQ,
+    (snap) => {
+      if (state.cancelled) return;
+      const sorted = sortChallengeDocsNewestFirst(snap.docs).slice(0, 50);
+      onNext({ docs: sorted });
+    },
+    (err) => onError(err),
+  );
+}
+
+function stopActiveUserPublishedWatch(state) {
+  if (!state.unsub) return;
+  state.unsub();
+  state.unsub = null;
+}
+
+function stopUserPublishedWatch(state) {
+  state.cancelled = true;
+  stopActiveUserPublishedWatch(state);
 }
 
 export async function deleteUserChallenge(challengeId) {
@@ -219,12 +232,32 @@ export async function updateUserChallengeDetails(challengeId, patch) {
   if (data.createdBy !== auth.currentUser.uid) {
     throw new Error("You can only edit your own hunts.");
   }
-  const title = typeof patch.title === "string" ? patch.title.trim() : "";
-  if (!title) throw new Error("Title is required.");
-  const areaLabel =
-    typeof patch.areaLabel === "string" ? patch.areaLabel.trim() : "";
-  if (!areaLabel) throw new Error("Area / neighborhood is required.");
-  const minutes = Number(patch.timeLimitMinutes);
+  await updateDoc(challengeRef, challengeDetailsUpdatePayload(patch));
+}
+
+function challengeDetailsUpdatePayload(patch) {
+  const title = requiredTrimmedField(patch.title, "Title is required.");
+  const areaLabel = requiredTrimmedField(
+    patch.areaLabel,
+    "Area / neighborhood is required.",
+  );
+  const updates = {
+    title,
+    areaLabel,
+    timeLimitMinutes: validTimeLimitMinutes(patch.timeLimitMinutes),
+  };
+  applyHuntHintUpdate(updates, patch.huntHint);
+  return updates;
+}
+
+function requiredTrimmedField(value, message) {
+  const out = typeof value === "string" ? value.trim() : "";
+  if (!out) throw new Error(message);
+  return out;
+}
+
+function validTimeLimitMinutes(value) {
+  const minutes = Number(value);
   if (
     !Number.isInteger(minutes) ||
     minutes < 1 ||
@@ -232,19 +265,12 @@ export async function updateUserChallengeDetails(challengeId, patch) {
   ) {
     throw new Error("Time limit must be between 1 and 1440 minutes.");
   }
-  const rawHint =
-    typeof patch.huntHint === "string" ? patch.huntHint.trim() : "";
-  const updates = {
-    title,
-    areaLabel,
-    timeLimitMinutes: minutes,
-  };
-  if (rawHint) {
-    updates.huntHint = rawHint.slice(0, 800);
-  } else {
-    updates.huntHint = deleteField();
-  }
-  await updateDoc(challengeRef, updates);
+  return minutes;
+}
+
+function applyHuntHintUpdate(updates, huntHint) {
+  const rawHint = typeof huntHint === "string" ? huntHint.trim() : "";
+  updates.huntHint = rawHint ? rawHint.slice(0, 800) : deleteField();
 }
 
 /* ── Create challenge with image upload ── */
@@ -267,32 +293,54 @@ export async function createChallenge({
 
   const challengeRef = doc(collection(db, "challenges"));
   const challengeId = challengeRef.id;
+  const spots = await uploadChallengeSpots(challengeId, files, hints, spotLatLngs, lat, lng);
+  const payload = challengePayload({ title, areaLabel, timeLimitMinutes, huntHint, lat, lng, spots });
+
+  await setDoc(challengeRef, payload);
+
+  return challengeId;
+}
+
+async function uploadChallengeSpots(challengeId, files, hints, spotLatLngs, lat, lng) {
   const spots = [];
-
   for (let i = 0; i < files.length; i += 1) {
-    const jpegBlob = await compressCheckpointImage(files[i]);
-    const path = `challenges/${challengeId}/${i}.jpg`;
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
-    const imageUrl = await getDownloadURL(storageRef);
-    const sl = spotLatLngs?.[i];
-    const spotLat =
-      typeof sl?.lat === "number" && Number.isFinite(sl.lat) ? sl.lat : lat;
-    const spotLng =
-      typeof sl?.lng === "number" && Number.isFinite(sl.lng) ? sl.lng : lng;
-    const row = { imageUrl, hint: hints[i] || "" };
-    if (
-      typeof spotLat === "number" &&
-      typeof spotLng === "number" &&
-      Number.isFinite(spotLat) &&
-      Number.isFinite(spotLng)
-    ) {
-      row.lat = spotLat;
-      row.lng = spotLng;
-    }
-    spots.push(row);
+    const imageUrl = await uploadChallengeSpotImage(challengeId, files[i], i);
+    spots.push(challengeSpotRow(imageUrl, hints[i] || "", spotLatLngs?.[i], lat, lng));
   }
+  return spots;
+}
 
+async function uploadChallengeSpotImage(challengeId, file, index) {
+  const jpegBlob = await compressChallengeImage(file);
+  const path = `challenges/${challengeId}/${index}.jpg`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, jpegBlob, { contentType: "image/jpeg" });
+  return getDownloadURL(storageRef);
+}
+
+function validCoordPair(lat, lng) {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng)
+  );
+}
+
+function challengeSpotRow(imageUrl, hint, spotLatLng, lat, lng) {
+  const spotLat =
+    typeof spotLatLng?.lat === "number" && Number.isFinite(spotLatLng.lat) ? spotLatLng.lat : lat;
+  const spotLng =
+    typeof spotLatLng?.lng === "number" && Number.isFinite(spotLatLng.lng) ? spotLatLng.lng : lng;
+  const row = { imageUrl, hint };
+  if (validCoordPair(spotLat, spotLng)) {
+    row.lat = spotLat;
+    row.lng = spotLng;
+  }
+  return row;
+}
+
+function challengePayload({ title, areaLabel, timeLimitMinutes, huntHint, lat, lng, spots }) {
   const payload = {
     title,
     areaLabel,
@@ -301,23 +349,13 @@ export async function createChallenge({
     createdAt: serverTimestamp(),
     spots,
   };
-
   const hh = typeof huntHint === "string" ? huntHint.trim() : "";
   if (hh) payload.huntHint = hh.slice(0, 800);
-
-  if (
-    typeof lat === "number" &&
-    typeof lng === "number" &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng)
-  ) {
+  if (validCoordPair(lat, lng)) {
     payload.lat = lat;
     payload.lng = lng;
   }
-
-  await setDoc(challengeRef, payload);
-
-  return challengeId;
+  return payload;
 }
 
 /* ── Geo helpers ── */
@@ -346,28 +384,21 @@ export function huntStartAnchorCoords(challenge) {
 
 export function checkpointProofCoords(challenge, spotIndex) {
   const spots = challenge?.spots || [];
-  const spot = spots[spotIndex];
-  if (
-    typeof spot?.lat === "number" &&
-    typeof spot?.lng === "number" &&
-    Number.isFinite(spot.lat) &&
-    Number.isFinite(spot.lng)
-  ) {
-    return { lat: spot.lat, lng: spot.lng };
-  }
-  if (
-    typeof challenge?.lat === "number" &&
-    typeof challenge?.lng === "number" &&
-    Number.isFinite(challenge.lat) &&
-    Number.isFinite(challenge.lng)
-  ) {
-    return { lat: challenge.lat, lng: challenge.lng };
-  }
+  const spotCoords = coordsFromEntity(spots[spotIndex]);
+  if (spotCoords) return spotCoords;
+  const challengeCoords = coordsFromEntity(challenge);
+  if (challengeCoords) return challengeCoords;
   const inf = inferManhattanPoint(challenge);
   if (inf) return inf;
   throw new Error(
     "This hunt has no stored map position for photo checks. Ask the host to republish from the map.",
   );
+}
+
+function coordsFromEntity(entity) {
+  return validCoordPair(entity?.lat, entity?.lng)
+    ? { lat: entity.lat, lng: entity.lng }
+    : null;
 }
 
 export function inferManhattanPoint(challenge) {

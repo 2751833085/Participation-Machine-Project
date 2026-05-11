@@ -2,7 +2,7 @@
  * User service: merit points, public profile (unique display name, avatar preset).
  */
 
-import { auth, db } from "../firebase-init.js";
+import { auth, db } from "./firebase.js";
 import {
   doc,
   getDoc,
@@ -47,7 +47,7 @@ export function avatarSrcForId(avatarId) {
   if (!avatarId) return null;
   const p = AVATAR_PRESETS.find((x) => x.id === avatarId);
   if (!p?.file) return null;
-  return `img/avatars/${p.file}`;
+  return `../img/avatars/${p.file}`;
 }
 
 /**
@@ -88,10 +88,18 @@ export async function ensureDefaultDisplayNameIfNeeded() {
   const ref = doc(db, "users", uid);
   const snap = await getDoc(ref);
   const d = snap.data() || {};
-  if (String(d.displayName || "").trim() || String(d.usernameNorm || "").trim()) {
-    return;
-  }
+  if (hasNamedProfile(d)) return;
+  await saveDefaultExplorerName();
+}
 
+function hasNamedProfile(data) {
+  return Boolean(
+    String(data.displayName || "").trim() ||
+    String(data.usernameNorm || "").trim(),
+  );
+}
+
+async function saveDefaultExplorerName() {
   for (let attempt = 0; attempt < 24; attempt += 1) {
     const code = randomExplorerCode(6);
     const displayName = `Explorer #${code}`;
@@ -185,6 +193,83 @@ export function watchUserProfile(uid, onData, onError) {
   );
 }
 
+async function readExistingProfile(transaction, uid) {
+  const userRef = doc(db, "users", uid);
+  const userSnap = await transaction.get(userRef);
+  const data = userSnap.exists() ? userSnap.data() : {};
+  return {
+    prevAvatar: data.avatarId ?? "",
+    prevName: data.displayName ?? "",
+    prevNorm: data.usernameNorm ?? "",
+    userRef,
+  };
+}
+
+async function deleteHandleIfOwned(transaction, usernameNorm, uid) {
+  if (!usernameNorm) return;
+  const oldRef = doc(db, "userHandles", usernameNorm);
+  const oldSnap = await transaction.get(oldRef);
+  if (oldSnap.exists() && oldSnap.data().uid === uid) {
+    transaction.delete(oldRef);
+  }
+}
+
+function avatarOnlyPayload(nextAvatar) {
+  return { avatarId: nextAvatar, updatedAt: serverTimestamp() };
+}
+
+function profilePayload(displayName, usernameNorm, avatarId) {
+  return {
+    displayName,
+    usernameNorm,
+    avatarId,
+    updatedAt: serverTimestamp(),
+  };
+}
+
+async function saveBlankProfile(transaction, profile) {
+  await deleteHandleIfOwned(transaction, profile.prevNorm, profile.uid);
+  transaction.set(
+    profile.userRef,
+    profilePayload("", "", profile.nextAvatar),
+    { merge: true },
+  );
+}
+
+async function saveNamedProfile(transaction, profile) {
+  const handleRef = doc(db, "userHandles", profile.normalized);
+  const handleSnap = await transaction.get(handleRef);
+  if (handleSnap.exists() && handleSnap.data().uid !== profile.uid) {
+    throw new DuplicateUsernameError();
+  }
+
+  if (profile.prevNorm !== profile.normalized) {
+    await deleteHandleIfOwned(transaction, profile.prevNorm, profile.uid);
+  }
+  if (!handleSnap.exists()) {
+    transaction.set(handleRef, { uid: profile.uid });
+  }
+  transaction.set(
+    profile.userRef,
+    profilePayload(profile.nameTrim, profile.normalized, profile.nextAvatar),
+    { merge: true },
+  );
+}
+
+async function persistUserProfile(transaction, profile) {
+  if (profile.onlyAvatar) {
+    transaction.set(profile.userRef, avatarOnlyPayload(profile.nextAvatar), {
+      merge: true,
+    });
+    return;
+  }
+  if (profile.nameTrim.length === 0) {
+    await saveBlankProfile(transaction, profile);
+    return;
+  }
+  await saveNamedProfile(transaction, profile);
+}
+
 /**
  * Saves display name + avatar. Name must normalize uniquely (userHandles).
  * Pass `avatarId` as undefined to keep previous avatar when only updating name.
@@ -193,85 +278,40 @@ export async function saveUserProfile({ displayName: rawName, avatarId }) {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("Not signed in.");
 
+  const draft = profileSaveDraft(rawName);
+  await runTransaction(db, async (transaction) => {
+    const existing = await readExistingProfile(transaction, uid);
+    await persistUserProfile(transaction, profileSavePayload(uid, draft, avatarId, existing));
+  });
+}
+
+function profileSaveDraft(rawName) {
   const nameTrim = String(rawName || "").trim();
   const normalized = normalizeUsername(nameTrim);
-
   if (nameTrim.length > 0 && normalized === null) {
     throw new Error(
       "Use letters, numbers, and single spaces only (2–24 characters).",
     );
   }
+  return { nameTrim, normalized };
+}
 
-  await runTransaction(db, async (transaction) => {
-    const userRef = doc(db, "users", uid);
-    const userSnap = await transaction.get(userRef);
-    const prevNorm = userSnap.exists() ? (userSnap.data().usernameNorm ?? "") : "";
-    const prevName = userSnap.exists() ? (userSnap.data().displayName ?? "") : "";
-    const prevAvatar = userSnap.exists() ? (userSnap.data().avatarId ?? "") : "";
-    const nextAvatar = avatarId !== undefined ? String(avatarId || "") : prevAvatar;
+function profileSavePayload(uid, draft, avatarId, existing) {
+  const { prevNorm, prevName, prevAvatar, userRef } = existing;
+  const nextAvatar = avatarId !== undefined ? String(avatarId || "") : prevAvatar;
+  return {
+    nameTrim: draft.nameTrim,
+    normalized: draft.normalized,
+    nextAvatar,
+    onlyAvatar: isAvatarOnlyProfileSave(avatarId, draft, prevName, prevNorm),
+    prevNorm,
+    uid,
+    userRef,
+  };
+}
 
-    const onlyAvatar =
-      avatarId !== undefined &&
-      nameTrim === prevName &&
-      (normalized || "") === (prevNorm || "");
-
-    if (onlyAvatar) {
-      transaction.set(
-        userRef,
-        { avatarId: nextAvatar, updatedAt: serverTimestamp() },
-        { merge: true },
-      );
-      return;
-    }
-
-    if (nameTrim.length === 0) {
-      if (prevNorm) {
-        const oldRef = doc(db, "userHandles", prevNorm);
-        const oldSnap = await transaction.get(oldRef);
-        if (oldSnap.exists() && oldSnap.data().uid === uid) {
-          transaction.delete(oldRef);
-        }
-      }
-      transaction.set(
-        userRef,
-        {
-          displayName: "",
-          usernameNorm: "",
-          avatarId: nextAvatar,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
-      return;
-    }
-
-    const handleRef = doc(db, "userHandles", normalized);
-    const handleSnap = await transaction.get(handleRef);
-    if (handleSnap.exists() && handleSnap.data().uid !== uid) {
-      throw new DuplicateUsernameError();
-    }
-
-    if (prevNorm && prevNorm !== normalized) {
-      const oldRef = doc(db, "userHandles", prevNorm);
-      const oldSnap = await transaction.get(oldRef);
-      if (oldSnap.exists() && oldSnap.data().uid === uid) {
-        transaction.delete(oldRef);
-      }
-    }
-
-    if (!handleSnap.exists()) {
-      transaction.set(handleRef, { uid });
-    }
-
-    transaction.set(
-      userRef,
-      {
-        displayName: nameTrim,
-        usernameNorm: normalized,
-        avatarId: nextAvatar,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
-  });
+function isAvatarOnlyProfileSave(avatarId, draft, prevName, prevNorm) {
+  return avatarId !== undefined &&
+    draft.nameTrim === prevName &&
+    (draft.normalized || "") === (prevNorm || "");
 }

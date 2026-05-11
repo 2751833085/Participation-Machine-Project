@@ -351,6 +351,36 @@ body[data-modal-open] .leaflet-container {
   }
 }
 
+/* Username edit modal — anchor to top so iOS keyboard never has to push
+   the dialog up (which on iOS scrolls the underlying page even when
+   body has overflow:hidden). The dialog stays fixed near the safe-area
+   top, the keyboard takes the bottom half, no scroll happens. */
+.modal-backdrop:has(.profile-username-modal) {
+  align-items: flex-start;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: auto;
+}
+
+.profile-username-modal {
+  margin-top: 0;
+}
+
+/* Hard scroll lock while the username modal is open. iOS Safari ignores
+   `overflow: hidden` on body when an input is focused — the position +
+   top trick keeps the page from scrolling under the keyboard. */
+html.is-username-modal-open,
+html.is-username-modal-open body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+html.is-username-modal-open body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+}
+
 .modal-dialog-title {
   margin: 0 0 0.5rem;
   padding-left: var(--title-text-inset);
@@ -400,6 +430,14 @@ body[data-modal-open] .leaflet-container {
 
 .language-picker-trigger:hover {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.language-picker-trigger:disabled,
+.language-picker-trigger[aria-disabled="true"] {
+  opacity: 0.62;
+  cursor: not-allowed;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface-2) 76%, var(--surface));
 }
 
 .language-picker-trigger:focus-visible {

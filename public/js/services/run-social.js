@@ -2,11 +2,8 @@
  * Shared photos during an active hunt: upload, reactions (👍👎 + moods), threaded comments.
  */
 
-import { auth, db, storage } from "../firebase-init.js";
-import { compressCheckpointImage } from "../image-utils.js";
-import { validateCameraPhotoProof } from "../lib/photo-proof.js";
-import { allSpotsFound } from "../lib/utils.js";
-import { checkpointProofCoords, getChallenge } from "./challenges.js";
+import { auth, db, storage } from "./firebase.js";
+import { allSpotsFound } from "./service-utils.js";
 import {
   addDoc,
   collection,
@@ -29,6 +26,29 @@ import {
 
 const MOODS = ["laugh", "cry", "awkward"];
 const VOTES = ["up", "down", ""];
+const IMAGE_UTILS_PATH = "../image-utils.js";
+const PHOTO_PROOF_PATH = "../lib/photo-proof.js";
+const CHALLENGES_PATH = "./challenges.js";
+let imageUtilsModule;
+let photoProofModule;
+let challengesModule;
+
+async function getUploadDeps() {
+  if (!imageUtilsModule) imageUtilsModule = import(IMAGE_UTILS_PATH);
+  if (!photoProofModule) photoProofModule = import(PHOTO_PROOF_PATH);
+  if (!challengesModule) challengesModule = import(CHALLENGES_PATH);
+  const [imageUtils, photoProof, challenges] = await Promise.all([
+    imageUtilsModule,
+    photoProofModule,
+    challengesModule,
+  ]);
+  return {
+    checkpointProofCoords: challenges.checkpointProofCoords,
+    compressCheckpointImage: imageUtils.compressCheckpointImage,
+    getChallenge: challenges.getChallenge,
+    validateCameraPhotoProof: photoProof.validateCameraPhotoProof,
+  };
+}
 
 export async function fetchAuthorName(uid) {
   if (!uid) return "Player";
@@ -53,6 +73,12 @@ export async function uploadRunPhoto({ challengeId, attemptId, file, spotIndex }
     throw new Error("Invalid checkpoint.");
   }
 
+  const {
+    checkpointProofCoords,
+    compressCheckpointImage,
+    getChallenge,
+    validateCameraPhotoProof,
+  } = await getUploadDeps();
   const ch = await getChallenge(challengeId);
   if (!ch) throw new Error("Hunt not found.");
   const proof = checkpointProofCoords(ch, spotIndex);
@@ -73,54 +99,80 @@ export async function uploadRunPhoto({ challengeId, attemptId, file, spotIndex }
   const challengeRef = doc(db, "challenges", challengeId);
   const authorName = await fetchAuthorName(uid);
 
-  const { won } = await runTransaction(db, async (transaction) => {
-    const attemptSnap = await transaction.get(attemptRef);
-    const chSnap = await transaction.get(challengeRef);
-
-    if (!attemptSnap.exists()) throw new Error("Run not found.");
-    const a = attemptSnap.data();
-    if (a.userId !== uid) throw new Error("Not your run.");
-    if (a.challengeId !== challengeId) throw new Error("Challenge mismatch.");
-    if (a.status !== "active") throw new Error("Run is not active.");
-
-    const spots = chSnap.exists() ? chSnap.data().spots || [] : [];
-    const total = spots.length;
-    if (spotIndex >= total) throw new Error("Invalid checkpoint.");
-
-    const deadlineMs = a.deadlineAt.toMillis();
-    if (Date.now() > deadlineMs) {
-      throw new Error("Time is up — cannot submit checkpoints.");
-    }
-
-    const prevFound = a.foundSpotIndices || [];
-    const found = new Set([...prevFound, spotIndex]);
-    const arr = [...found].sort((x, y) => x - y);
-
-    transaction.set(photoRef, {
-      challengeId,
+  const { won } = await runTransaction(db, (transaction) =>
+    commitRunPhotoUpload(transaction, {
       attemptId,
-      userId: uid,
-      spotIndex,
-      imageUrl,
-      createdAt: serverTimestamp(),
+      attemptRef,
       authorName,
-    });
-
-    const win = allSpotsFound(arr, total);
-    if (win) {
-      transaction.update(attemptRef, {
-        foundSpotIndices: arr,
-        status: "won",
-        completedAt: Timestamp.now(),
-      });
-    } else {
-      transaction.update(attemptRef, { foundSpotIndices: arr });
-    }
-
-    return { won: win };
-  });
+      challengeId,
+      challengeRef,
+      imageUrl,
+      photoRef,
+      spotIndex,
+      uid,
+    }),
+  );
 
   return { photoId, won };
+}
+
+async function commitRunPhotoUpload(transaction, ctx) {
+  const attemptSnap = await transaction.get(ctx.attemptRef);
+  const chSnap = await transaction.get(ctx.challengeRef);
+  const attempt = validateRunPhotoAttempt(attemptSnap, ctx);
+  const total = validateRunPhotoChallenge(chSnap, ctx.spotIndex);
+  const foundSpotIndices = nextFoundSpotIndices(attempt, ctx.spotIndex);
+  transaction.set(ctx.photoRef, runPhotoDoc(ctx));
+  const won = allSpotsFound(foundSpotIndices, total);
+  updateAttemptAfterPhoto(transaction, ctx.attemptRef, foundSpotIndices, won);
+  return { won };
+}
+
+function validateRunPhotoAttempt(attemptSnap, { uid, challengeId }) {
+  if (!attemptSnap.exists()) throw new Error("Run not found.");
+  const attempt = attemptSnap.data();
+  if (attempt.userId !== uid) throw new Error("Not your run.");
+  if (attempt.challengeId !== challengeId) throw new Error("Challenge mismatch.");
+  if (attempt.status !== "active") throw new Error("Run is not active.");
+  if (Date.now() > attempt.deadlineAt.toMillis()) {
+    throw new Error("Time is up — cannot submit checkpoints.");
+  }
+  return attempt;
+}
+
+function validateRunPhotoChallenge(chSnap, spotIndex) {
+  const spots = chSnap.exists() ? chSnap.data().spots || [] : [];
+  if (spotIndex >= spots.length) throw new Error("Invalid checkpoint.");
+  return spots.length;
+}
+
+function nextFoundSpotIndices(attempt, spotIndex) {
+  const found = new Set([...(attempt.foundSpotIndices || []), spotIndex]);
+  return [...found].sort((x, y) => x - y);
+}
+
+function runPhotoDoc(ctx) {
+  return {
+    challengeId: ctx.challengeId,
+    attemptId: ctx.attemptId,
+    userId: ctx.uid,
+    spotIndex: ctx.spotIndex,
+    imageUrl: ctx.imageUrl,
+    createdAt: serverTimestamp(),
+    authorName: ctx.authorName,
+  };
+}
+
+function updateAttemptAfterPhoto(transaction, attemptRef, foundSpotIndices, won) {
+  if (!won) {
+    transaction.update(attemptRef, { foundSpotIndices });
+    return;
+  }
+  transaction.update(attemptRef, {
+    foundSpotIndices,
+    status: "won",
+    completedAt: Timestamp.now(),
+  });
 }
 
 export function watchRunPhotos(challengeId, callback, onError) {

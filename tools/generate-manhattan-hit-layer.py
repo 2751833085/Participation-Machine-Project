@@ -51,108 +51,77 @@ def chunk_to_hit(chunk: str, counts: dict[str, int]) -> str:
     if not rm:
         raise ValueError("missing data-region")
     key = rm.group(1)
-    counts[key] = counts.get(key, 0) + 1
-    n = counts[key]
-    el_id = f"mh-region-{key}" if n == 1 else f"mh-region-{key}-{n}"
+    el_id = next_hit_id(key, counts)
     label = key_to_aria_label(key)
     c = chunk.strip()
 
     if c.startswith("<rect"):
-        xm = re.search(r'\bx="([^"]+)"', c)
-        ym = re.search(r'\by="([^"]+)"', c)
-        wm = re.search(r'\bwidth="([^"]+)"', c)
-        hm = re.search(r'\bheight="([^"]+)"', c)
-        tm = re.search(r'transform="([^"]+)"', c)
-        if not wm or not hm:
-            raise ValueError(f"rect missing width/height: {c[:80]}")
-        bits = [
-            '<rect fill="none" pointer-events="all"',
-            f'x="{xm.group(1) if xm else "0"}"',
-            f'y="{ym.group(1) if ym else "0"}"',
-            f'width="{wm.group(1)}"',
-            f'height="{hm.group(1)}"',
-        ]
-        if tm:
-            bits.append(f'transform="{tm.group(1)}"')
-        bits.extend(
-            [
-                f'id="{el_id}"',
-                'class="mh-boro"',
-                f'data-region="{key}"',
-                'tabindex="0"',
-                'role="button"',
-                f'aria-label="{label}"/>',
-            ]
-        )
-        return " ".join(bits)
+        return rect_hit(c, key, el_id, label)
 
     if c.startswith("<path"):
-        dm = re.search(r'd="([^"]+)"', c)
-        tm = re.search(r'transform="([^"]+)"', c)
-        if not dm:
-            raise ValueError(f"path missing d: {c[:80]}")
-        bits = [
-            '<path fill="none" pointer-events="all"',
-            f'd="{dm.group(1)}"',
-        ]
-        if tm:
-            bits.append(f'transform="{tm.group(1)}"')
-        bits.extend(
-            [
-                f'id="{el_id}"',
-                'class="mh-boro"',
-                f'data-region="{key}"',
-                'tabindex="0"',
-                'role="button"',
-                f'aria-label="{label}"/>',
-            ]
-        )
-        return " ".join(bits)
+        return path_hit(c, key, el_id, label)
 
     raise ValueError(f"unknown chroma tag: {c[:40]}")
 
 
+def next_hit_id(key: str, counts: dict[str, int]) -> str:
+    counts[key] = counts.get(key, 0) + 1
+    n = counts[key]
+    return f"mh-region-{key}" if n == 1 else f"mh-region-{key}-{n}"
+
+
+def rect_hit(chunk: str, key: str, el_id: str, label: str) -> str:
+    xm = re.search(r'\bx="([^"]+)"', chunk)
+    ym = re.search(r'\by="([^"]+)"', chunk)
+    wm = re.search(r'\bwidth="([^"]+)"', chunk)
+    hm = re.search(r'\bheight="([^"]+)"', chunk)
+    if not wm or not hm:
+        raise ValueError(f"rect missing width/height: {chunk[:80]}")
+    bits = [
+        '<rect fill="none" pointer-events="all"',
+        f'x="{xm.group(1) if xm else "0"}"',
+        f'y="{ym.group(1) if ym else "0"}"',
+        f'width="{wm.group(1)}"',
+        f'height="{hm.group(1)}"',
+    ]
+    return " ".join(hit_bits_with_transform(bits, chunk, key, el_id, label))
+
+
+def path_hit(chunk: str, key: str, el_id: str, label: str) -> str:
+    dm = re.search(r'd="([^"]+)"', chunk)
+    if not dm:
+        raise ValueError(f"path missing d: {chunk[:80]}")
+    bits = [
+        '<path fill="none" pointer-events="all"',
+        f'd="{dm.group(1)}"',
+    ]
+    return " ".join(hit_bits_with_transform(bits, chunk, key, el_id, label))
+
+
+def hit_bits_with_transform(bits: list[str], chunk: str, key: str, el_id: str, label: str) -> list[str]:
+    tm = re.search(r'transform="([^"]+)"', chunk)
+    if tm:
+        bits.append(f'transform="{tm.group(1)}"')
+    bits.extend([
+        f'id="{el_id}"',
+        'class="mh-boro"',
+        f'data-region="{key}"',
+        'tabindex="0"',
+        'role="button"',
+        f'aria-label="{label}"/>',
+    ])
+    return bits
+
+
 def main() -> None:
-    path = SVG_PATH
-    if len(sys.argv) > 1:
-        path = Path(sys.argv[1])
+    path = output_svg_path()
     svg = path.read_text(encoding="utf-8")
-    inner = extract_chroma_inner(svg)
-    chunks = chroma_chunks(inner)
-    counts: dict[str, int] = {}
-    hits = [chunk_to_hit(ch, counts) for ch in chunks]
-    # financial-east path hit last for z-order (legacy stacking fix)
-    fe = [h for h in hits if 'data-region="financial-east"' in h]
-    rest = [h for h in hits if 'data-region="financial-east"' not in h]
-    ordered = rest + fe
+    ordered = ordered_hit_targets(svg)
     hit_block = '<g class="mh-hit-layer" pointer-events="auto">' + "".join(ordered) + "</g>"
 
     if "</svg>" not in svg:
         raise SystemExit("no closing svg tag")
-    # remove existing hit layer if present
-    old = svg
-    while True:
-        start = old.find('<g class="mh-hit-layer"')
-        if start == -1:
-            break
-        pos = start
-        depth = 0
-        i = pos
-        while i < len(old):
-            if old.startswith("<g ", i) or old.startswith("<g>", i):
-                depth += 1
-                i = old.find(">", i) + 1
-                continue
-            if old.startswith("</g>", i):
-                depth -= 1
-                i += 4
-                if depth == 0:
-                    old = old[:start] + old[i:]
-                    break
-                continue
-            i += 1
-        else:
-            raise SystemExit("unclosed mh-hit-layer")
+    old = remove_existing_hit_layers(svg)
 
     if old.rstrip().endswith("</svg>"):
         new_svg = old.rstrip()[:-6] + hit_block + "\n</svg>"
@@ -161,6 +130,54 @@ def main() -> None:
 
     path.write_text(new_svg, encoding="utf-8")
     print(f"wrote {len(ordered)} hit targets to {path}")
+
+
+def output_svg_path() -> Path:
+    if len(sys.argv) > 1:
+        return Path(sys.argv[1])
+    return SVG_PATH
+
+
+def ordered_hit_targets(svg: str) -> list[str]:
+    chunks = chroma_chunks(extract_chroma_inner(svg))
+    counts: dict[str, int] = {}
+    hits = [chunk_to_hit(ch, counts) for ch in chunks]
+    return hit_targets_with_financial_east_last(hits)
+
+
+def hit_targets_with_financial_east_last(hits: list[str]) -> list[str]:
+    # financial-east path hit last for z-order (legacy stacking fix)
+    fe = [h for h in hits if 'data-region="financial-east"' in h]
+    rest = [h for h in hits if 'data-region="financial-east"' not in h]
+    return rest + fe
+
+
+def remove_existing_hit_layers(svg: str) -> str:
+    old = svg
+    while True:
+        start = old.find('<g class="mh-hit-layer"')
+        if start == -1:
+            return old
+        end = hit_layer_end(old, start)
+        old = old[:start] + old[end:]
+
+
+def hit_layer_end(svg: str, start: int) -> int:
+    depth = 0
+    i = start
+    while i < len(svg):
+        if svg.startswith("<g ", i) or svg.startswith("<g>", i):
+            depth += 1
+            i = svg.find(">", i) + 1
+            continue
+        if svg.startswith("</g>", i):
+            depth -= 1
+            i += 4
+            if depth == 0:
+                return i
+            continue
+        i += 1
+    raise SystemExit("unclosed mh-hit-layer")
 
 
 if __name__ == "__main__":

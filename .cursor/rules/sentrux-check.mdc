@@ -1,0 +1,19 @@
+---
+description: Run Sentrux architecture check when changing tracked JS or Sentrux rules.
+globs: public/js/**/*.js,public/game/js/**/*.js,.sentrux/**/*
+alwaysApply: false
+---
+
+# Sentrux architecture check
+
+Tourgo defines layers and boundaries in `.sentrux/rules.toml` (NeoUI SPA vs Friend app, import boundaries).
+
+After edits under `public/js/`, `public/game/js/`, or `.sentrux/`, run from the **repository root**:
+
+```bash
+sentrux check .
+```
+
+Resolve reported violations before finishing the task. Install the CLI if needed: [Sentrux README (中文)](https://github.com/sentrux/sentrux/blob/main/README.zh-CN.md) (`brew install sentrux/tap/sentrux` on macOS).
+
+**Baseline (phase 0):** `.sentrux/baseline.json` is committed; CI runs `sentrux gate .` after `sentrux check .`. When you intentionally accept a new architecture snapshot (e.g. after a large refactor), refresh the baseline from repo root: `sentrux gate --save .`, then commit `.sentrux/baseline.json`.

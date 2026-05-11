@@ -2,13 +2,13 @@
  * User reports on hunts (challenge listings).
  */
 
-import { auth, db } from "../firebase-init.js";
+import { auth, db } from "./firebase.js";
+import { openAlertModal, openReportHuntModal } from "../components/modal.js";
 import {
   addDoc,
   collection,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-import { openAlertModal, openReportHuntModal } from "../components/modal.js";
 import { promptGuestNeedsSignIn } from "./auth.js";
 
 /** Preset reasons shown in the report modal (value stored as `category`). */
